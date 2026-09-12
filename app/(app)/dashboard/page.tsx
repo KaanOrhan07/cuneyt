@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, StatCard, StatusDot } from "@/components/ui";
-import { formatTL } from "@/lib/format";
+import { formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
+import { istanbulDayKey, istanbulDaysAgo, istanbulMidnightUTC, istanbulToday } from "@/lib/tr-time";
 import type { Firma, SiparisDurum, SiparisTip, Urun } from "@/lib/types";
 
 const GUN_LABEL = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
@@ -9,10 +10,10 @@ const GUN_LABEL = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const now = new Date();
-  const ayBasi = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const yediGunOnce = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-  yediGunOnce.setHours(0, 0, 0, 0);
+  const bugun = istanbulToday();
+  const ayBasi = istanbulMidnightUTC(bugun.year, bugun.month, 1).toISOString();
+  const yediGunOnceParts = istanbulDaysAgo(6);
+  const yediGunOnce = istanbulMidnightUTC(yediGunOnceParts.year, yediGunOnceParts.month, yediGunOnceParts.day);
 
   const [
     { data: buAySatisKalemleri },
@@ -23,10 +24,11 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from("siparis_kalemleri")
-      .select("adet, birim_fiyat, urunler(ortalama_maliyet), siparisler!inner(tip, tarih_saat)")
+      .select("adet, birim_fiyat, urunler(ortalama_maliyet), siparisler!inner(tip, tarih_saat, durum)")
       .eq("siparisler.tip", "satis")
+      .neq("siparisler.durum", "iptal_edildi")
       .gte("siparisler.tarih_saat", ayBasi),
-    supabase.from("siparisler").select("tip").neq("durum", "teslim_edildi"),
+    supabase.from("siparisler").select("tip").not("durum", "in", "(teslim_edildi,iptal_edildi)"),
     supabase
       .from("urunler")
       .select("*")
@@ -35,6 +37,7 @@ export default async function DashboardPage() {
     supabase
       .from("siparisler")
       .select("tip, tarih_saat, siparis_kalemleri(adet, birim_fiyat)")
+      .neq("durum", "iptal_edildi")
       .gte("tarih_saat", yediGunOnce.toISOString()),
     supabase
       .from("siparisler")
@@ -59,10 +62,14 @@ export default async function DashboardPage() {
   const kritikSayi = (kritikUrunler as Urun[] | null)?.filter((u) => u.stok_adet <= u.kritik_stok_esigi).length ?? 0;
   const kritikListe = (kritikUrunler as Urun[] | null)?.filter((u) => u.stok_adet <= u.kritik_stok_esigi).slice(0, 4) ?? [];
 
+  const gunAnahtarlari: string[] = [];
   const gunler: { label: string; alis: number; satis: number }[] = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(yediGunOnce.getTime() + i * 24 * 60 * 60 * 1000);
-    gunler.push({ label: GUN_LABEL[d.getDay()], alis: 0, satis: 0 });
+    const parts = istanbulDaysAgo(6 - i);
+    const key = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+    gunAnahtarlari.push(key);
+    const haftaGunu = new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay();
+    gunler.push({ label: GUN_LABEL[haftaGunu], alis: 0, satis: 0 });
   }
   type HaftalikSiparis = {
     tip: SiparisTip;
@@ -70,10 +77,8 @@ export default async function DashboardPage() {
     siparis_kalemleri: { adet: number; birim_fiyat: number }[];
   };
   (haftalikSiparisler as unknown as HaftalikSiparis[] | null)?.forEach((s) => {
-    const gunIndex = Math.floor(
-      (new Date(s.tarih_saat).setHours(0, 0, 0, 0) - yediGunOnce.getTime()) / (24 * 60 * 60 * 1000),
-    );
-    if (gunIndex < 0 || gunIndex > 6) return;
+    const gunIndex = gunAnahtarlari.indexOf(istanbulDayKey(s.tarih_saat));
+    if (gunIndex < 0) return;
     const tutar = s.siparis_kalemleri.reduce((sum, k) => sum + k.adet * k.birim_fiyat, 0);
     if (s.tip === "alis") gunler[gunIndex].alis += tutar;
     else gunler[gunIndex].satis += tutar;
@@ -86,7 +91,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="font-display text-[22px] font-semibold">Genel Bakış</h1>
           <p className="mt-0.5 text-[13px] text-text-dim">
-            {now.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })}
+            {formatTarih(new Date(), { day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>
         <Link href="/siparisler/yeni">
@@ -179,9 +184,7 @@ export default async function DashboardPage() {
               const toplam = kalemler.reduce((sum, k) => sum + k.adet * k.birim_fiyat, 0);
               return (
                 <tr key={s.id} className="border-b border-border last:border-0">
-                  <td className="py-2.5 font-mono">
-                    {new Date(s.tarih_saat).toLocaleString("tr-TR")}
-                  </td>
+                  <td className="py-2.5 font-mono">{formatTarihSaat(s.tarih_saat)}</td>
                   <td className="py-2.5">
                     <span className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full" style={{ background: firma?.renk }} />

@@ -2,14 +2,15 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FirmaForm } from "@/components/firma-form";
 import { deleteFirma } from "@/lib/actions/firmalar";
+import { Input } from "@/components/ui";
 import type { Firma } from "@/lib/types";
 
 export default async function FirmalarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tip?: string }>;
+  searchParams: Promise<{ tip?: string; q?: string }>;
 }) {
-  const { tip } = await searchParams;
+  const { tip, q } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -20,6 +21,7 @@ export default async function FirmalarPage({
 
   if (tip === "tedarikci") query = query.eq("is_tedarikci", true);
   if (tip === "musteri") query = query.eq("is_musteri", true);
+  if (q) query = query.ilike("ad", `%${q}%`);
 
   const { data: firmalar } = await query;
 
@@ -40,20 +42,26 @@ export default async function FirmalarPage({
 
       <FirmaForm />
 
-      <div className="my-5 flex gap-2">
-        {tabs.map((t) => (
-          <Link
-            key={t.label}
-            href={t.key ? `/firmalar?tip=${t.key}` : "/firmalar"}
-            className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${
-              tip === t.key
-                ? "bg-green text-white"
-                : "border border-border bg-card text-text-dim"
-            }`}
-          >
-            {t.label}
-          </Link>
-        ))}
+      <div className="my-5 flex items-center justify-between gap-3">
+        <div className="flex gap-2">
+          {tabs.map((t) => (
+            <Link
+              key={t.label}
+              href={t.key ? `/firmalar?tip=${t.key}` : "/firmalar"}
+              className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${
+                tip === t.key
+                  ? "bg-green text-white"
+                  : "border border-border bg-card text-text-dim"
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
+        </div>
+        <form className="flex items-center gap-2">
+          {tip && <input type="hidden" name="tip" value={tip} />}
+          <Input name="q" placeholder="Firma ara..." defaultValue={q ?? ""} className="w-56" />
+        </form>
       </div>
 
       <div className="grid grid-cols-3 gap-4">

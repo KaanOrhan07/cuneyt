@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Panel, StatusDot } from "@/components/ui";
-import { formatTL } from "@/lib/format";
+import { Panel } from "@/components/ui";
+import { DurumSelect } from "@/components/durum-select";
+import { formatTL, formatTarihSaat } from "@/lib/format";
 import type { SiparisDurum } from "@/lib/types";
 
 export default async function FirmaDetailPage({
@@ -87,14 +88,14 @@ export default async function FirmaDetailPage({
               return (
                 <tr key={s.id} className="border-b border-border last:border-0">
                   <td className="py-2.5 font-mono">
-                    {new Date(s.tarih_saat).toLocaleString("tr-TR")}
+                    {formatTarihSaat(s.tarih_saat)}
                   </td>
                   <td className="py-2.5">
                     {kalemler.map((k) => k.urunler?.ad).join(", ")}
                   </td>
                   <td className="py-2.5 font-mono">{formatTL(toplam)}</td>
                   <td className="py-2.5">
-                    <StatusDot durum={s.durum as SiparisDurum} />
+                    <DurumSelect id={s.id} durum={s.durum as SiparisDurum} />
                   </td>
                 </tr>
               );

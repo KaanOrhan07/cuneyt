@@ -21,14 +21,14 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CÜNEYT — Sipariş Takip",
-  description: "CÜNEYT sipariş ve stok takip uygulaması",
+  title: "DiTrack — Sipariş Takip",
+  description: "DiTrack sipariş ve stok takip uygulaması",
 };
 
 const themeInitScript = `
 (function () {
   try {
-    var theme = localStorage.getItem("cuneyt-theme");
+    var theme = localStorage.getItem("ditrack-theme");
     if (!theme) theme = "light";
     document.documentElement.setAttribute("data-theme", theme);
   } catch (e) {}

@@ -27,6 +27,10 @@ export function UrunForm() {
             <Input name="ad" required className="w-48" />
           </div>
           <div className="flex flex-col gap-1.5">
+            <Label>Fotoğraf URL (opsiyonel)</Label>
+            <Input name="fotograf_url" type="url" placeholder="https://..." className="w-56" />
+          </div>
+          <div className="flex flex-col gap-1.5">
             <Label>Başlangıç Stok</Label>
             <Input name="stok_adet" type="number" step="1" defaultValue={0} className="w-28" />
           </div>

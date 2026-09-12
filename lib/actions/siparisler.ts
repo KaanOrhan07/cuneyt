@@ -55,15 +55,23 @@ export async function createSiparis(
 
   revalidatePath("/siparisler");
   revalidatePath("/urunler");
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   revalidatePath(`/firmalar/${firma_id}`);
   redirect("/siparisler");
 }
 
 export async function updateDurum(id: string, durum: SiparisDurum) {
   const supabase = await createClient();
-  const { error } = await supabase.from("siparisler").update({ durum }).eq("id", id);
+  const { data, error } = await supabase
+    .from("siparisler")
+    .update({ durum })
+    .eq("id", id)
+    .select("firma_id")
+    .single();
   if (error) throw new Error(error.message);
   revalidatePath("/siparisler");
   revalidatePath("/dashboard");
+  revalidatePath("/urunler");
+  revalidatePath("/dashboard", "layout");
+  if (data?.firma_id) revalidatePath(`/firmalar/${data.firma_id}`);
 }

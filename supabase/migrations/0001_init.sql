@@ -1,4 +1,4 @@
--- CÜNEYT Sipariş Takip — initial schema
+-- DiTrack Sipariş Takip — initial schema
 -- Run this once in the Supabase SQL editor (Project → SQL Editor → New query).
 
 create extension if not exists "pgcrypto";

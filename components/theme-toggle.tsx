@@ -10,7 +10,7 @@ export function ThemeToggle() {
   function toggle() {
     const next = isDark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("cuneyt-theme", next);
+    localStorage.setItem("ditrack-theme", next);
     setIsDark(!isDark);
   }
 

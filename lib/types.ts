@@ -21,7 +21,7 @@ export type Urun = {
 };
 
 export type SiparisTip = "alis" | "satis";
-export type SiparisDurum = "beklemede" | "yolda" | "teslim_edildi";
+export type SiparisDurum = "beklemede" | "yolda" | "teslim_edildi" | "iptal_edildi";
 
 export type Siparis = {
   id: string;
@@ -45,4 +45,5 @@ export const DURUM_LABEL: Record<SiparisDurum, string> = {
   beklemede: "Beklemede",
   yolda: "Yolda",
   teslim_edildi: "Teslim edildi",
+  iptal_edildi: "İptal edildi",
 };

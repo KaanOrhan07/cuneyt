@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, Select } from "@/components/ui";
 import { DurumSelect } from "@/components/durum-select";
-import { formatTL } from "@/lib/format";
+import { formatTL, formatTarihSaat } from "@/lib/format";
 import type { Firma, SiparisDurum, SiparisTip, Urun } from "@/lib/types";
 
 type Filters = {
@@ -85,6 +85,7 @@ export default async function SiparislerPage({
           <option value="beklemede">Beklemede</option>
           <option value="yolda">Yolda</option>
           <option value="teslim_edildi">Teslim edildi</option>
+          <option value="iptal_edildi">İptal edildi</option>
         </Select>
         <input
           type="date"
@@ -127,7 +128,7 @@ export default async function SiparislerPage({
               return (
                 <tr key={s.id} className="border-b border-border last:border-0">
                   <td className="py-2.5 font-mono">
-                    {new Date(s.tarih_saat).toLocaleString("tr-TR")}
+                    {formatTarihSaat(s.tarih_saat)}
                   </td>
                   <td className="py-2.5">
                     <Link href={`/firmalar/${firma?.id}`} className="flex items-center gap-2">

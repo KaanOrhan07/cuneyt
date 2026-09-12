@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, SelectHTMLAttributes, ButtonHTMLAttributes } from "react";
+import { DURUM_LABEL, type SiparisDurum } from "@/lib/types";
 
 export function Panel({
   title,
@@ -77,14 +78,23 @@ export function Badge({ tip }: { tip: "alis" | "satis" }) {
   );
 }
 
-export function StatusDot({ durum }: { durum: "beklemede" | "yolda" | "teslim_edildi" }) {
+export function StatusDot({ durum }: { durum: SiparisDurum }) {
   const color =
-    durum === "teslim_edildi" ? "var(--green)" : durum === "yolda" ? "var(--orange)" : "var(--gray)";
-  const label = { beklemede: "Beklemede", yolda: "Yolda", teslim_edildi: "Teslim edildi" }[durum];
+    durum === "teslim_edildi"
+      ? "var(--green)"
+      : durum === "yolda"
+        ? "var(--orange)"
+        : durum === "iptal_edildi"
+          ? "#C0392B"
+          : "var(--gray)";
   return (
-    <span className="flex items-center gap-1.5 text-[11px] font-medium text-text-dim">
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
-      {label}
+    <span
+      className={`flex items-center gap-1.5 text-[11px] font-medium ${
+        durum === "iptal_edildi" ? "text-[#C0392B] line-through" : "text-text-dim"
+      }`}
+    >
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color }} />
+      {DURUM_LABEL[durum]}
     </span>
   );
 }

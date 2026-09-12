@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
+import { Footer } from "./footer";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -12,7 +13,7 @@ const NAV_ITEMS = [
   { href: "/raporlar", label: "Raporlar" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ kritikStokSayisi = 0 }: { kritikStokSayisi?: number }) {
   const pathname = usePathname();
 
   return (
@@ -22,10 +23,10 @@ export function Sidebar() {
           className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] font-display text-[15px] font-bold text-white"
           style={{ background: "linear-gradient(135deg, var(--green), #1c4f38)" }}
         >
-          C
+          D
         </div>
         <div>
-          <div className="font-display text-[15px] font-semibold">CÜNEYT</div>
+          <div className="font-display text-[15px] font-semibold">DiTrack</div>
           <div className="-mt-0.5 text-[11px] text-text-dim">Sipariş Takip</div>
         </div>
       </div>
@@ -37,20 +38,29 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors ${
+              className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-[13.5px] font-medium transition-colors ${
                 active
                   ? "bg-green text-white"
                   : "text-text-dim hover:bg-border hover:text-text"
               }`}
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.href === "/urunler" && kritikStokSayisi > 0 && (
+                <span
+                  className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10.5px] font-semibold text-white"
+                  style={{ background: active ? "rgba(255,255,255,0.25)" : "var(--orange)" }}
+                >
+                  {kritikStokSayisi}
+                </span>
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="mt-auto">
+      <div className="mt-auto flex flex-col gap-3">
         <ThemeToggle />
+        <Footer />
       </div>
     </aside>
   );

@@ -17,6 +17,27 @@ export async function addUrun(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/urunler");
+  revalidatePath("/dashboard", "layout");
+}
+
+export async function updateUrun(id: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("urunler")
+    .update({
+      ad: formData.get("ad") as string,
+      fotograf_url: (formData.get("fotograf_url") as string) || null,
+      stok_adet: Number(formData.get("stok_adet") ?? 0),
+      ortalama_maliyet: Number(formData.get("ortalama_maliyet") ?? 0),
+      satis_fiyati: Number(formData.get("satis_fiyati") ?? 0),
+      kritik_stok_esigi: Number(formData.get("kritik_stok_esigi") ?? 0),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/urunler");
+  revalidatePath("/dashboard", "layout");
 }
 
 export async function deleteUrun(id: string) {
@@ -28,4 +49,5 @@ export async function deleteUrun(id: string) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/urunler");
+  revalidatePath("/dashboard", "layout");
 }

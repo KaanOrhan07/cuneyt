@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import type { AuthState } from "@/lib/actions/auth";
+import { Footer } from "@/components/footer";
 
 export function AuthForm({
   action,
@@ -21,10 +22,10 @@ export function AuthForm({
             className="flex h-9 w-9 items-center justify-center rounded-[9px] font-display text-[16px] font-bold text-white"
             style={{ background: "linear-gradient(135deg, var(--green), #1c4f38)" }}
           >
-            C
+            D
           </div>
           <div>
-            <div className="font-display text-[15px] font-semibold">CÜNEYT</div>
+            <div className="font-display text-[15px] font-semibold">DiTrack</div>
             <div className="-mt-0.5 text-[11px] text-text-dim">Sipariş Takip</div>
           </div>
         </div>
@@ -96,6 +97,10 @@ export function AuthForm({
             </>
           )}
         </p>
+
+        <div className="mt-6 border-t border-border pt-4">
+          <Footer />
+        </div>
       </div>
     </div>
   );

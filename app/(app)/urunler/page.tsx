@@ -1,17 +1,24 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UrunForm } from "@/components/urun-form";
-import { deleteUrun } from "@/lib/actions/urunler";
-import { Panel } from "@/components/ui";
-import { formatTL } from "@/lib/format";
+import { UrunRow } from "@/components/urun-row";
+import { Input, Panel } from "@/components/ui";
 import type { Urun } from "@/lib/types";
 
-export default async function UrunlerPage() {
+export default async function UrunlerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; kritik?: string }>;
+}) {
+  const { q, kritik } = await searchParams;
   const supabase = await createClient();
-  const { data: urunler } = await supabase
-    .from("urunler")
-    .select("*")
-    .is("deleted_at", null)
-    .order("ad");
+  let query = supabase.from("urunler").select("*").is("deleted_at", null).order("ad");
+  if (q) query = query.ilike("ad", `%${q}%`);
+
+  const { data: allUrunler } = await query;
+  const urunler = kritik
+    ? (allUrunler as Urun[] | null)?.filter((u) => u.stok_adet <= u.kritik_stok_esigi)
+    : (allUrunler as Urun[] | null);
 
   return (
     <div>
@@ -22,8 +29,33 @@ export default async function UrunlerPage() {
 
       <UrunForm />
 
+      <div className="my-5 flex items-center justify-between gap-3">
+        <div className="flex gap-2">
+          <Link
+            href="/urunler"
+            className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${
+              !kritik ? "bg-green text-white" : "border border-border bg-card text-text-dim"
+            }`}
+          >
+            Tümü
+          </Link>
+          <Link
+            href="/urunler?kritik=1"
+            className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium ${
+              kritik ? "bg-orange text-white" : "border border-border bg-card text-text-dim"
+            }`}
+          >
+            Sadece Kritik Stok
+          </Link>
+        </div>
+        <form className="flex items-center gap-2">
+          {kritik && <input type="hidden" name="kritik" value={kritik} />}
+          <Input name="q" placeholder="Ürün ara..." defaultValue={q ?? ""} className="w-56" />
+        </form>
+      </div>
+
       <Panel>
-        <table className="mt-4 w-full text-[13px]">
+        <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-border text-[11px] uppercase tracking-wide text-text-dim">
               <th className="pb-2.5 text-left font-semibold">Ürün</th>
@@ -35,29 +67,13 @@ export default async function UrunlerPage() {
             </tr>
           </thead>
           <tbody>
-            {(urunler as Urun[] | null)?.map((u) => {
-              const kritik = u.stok_adet <= u.kritik_stok_esigi;
-              return (
-                <tr key={u.id} className="border-b border-border last:border-0">
-                  <td className="py-2.5 font-medium">{u.ad}</td>
-                  <td className={`py-2.5 font-mono ${kritik ? "font-semibold text-orange" : ""}`}>
-                    {u.stok_adet}
-                  </td>
-                  <td className="py-2.5 font-mono">{formatTL(u.ortalama_maliyet)}</td>
-                  <td className="py-2.5 font-mono">{formatTL(u.satis_fiyati)}</td>
-                  <td className="py-2.5 font-mono text-text-dim">{u.kritik_stok_esigi}</td>
-                  <td className="py-2.5">
-                    <form action={deleteUrun.bind(null, u.id)}>
-                      <button className="text-[11px] text-text-dim hover:text-orange">Sil</button>
-                    </form>
-                  </td>
-                </tr>
-              );
-            })}
+            {urunler?.map((u) => (
+              <UrunRow key={u.id} urun={u} />
+            ))}
             {urunler?.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-4 text-text-dim">
-                  Henüz ürün eklenmedi.
+                  Ürün bulunamadı.
                 </td>
               </tr>
             )}
