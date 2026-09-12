@@ -64,6 +64,11 @@ export function AuthForm({
               {state.error}
             </p>
           )}
+          {state?.message && (
+            <p className="rounded-lg bg-green-soft px-3 py-2 text-[12.5px] text-green">
+              {state.message}
+            </p>
+          )}
 
           <button
             type="submit"
