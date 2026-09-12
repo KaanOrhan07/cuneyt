@@ -57,7 +57,18 @@ export async function createSiparis(
   revalidatePath("/urunler");
   revalidatePath("/dashboard", "layout");
   revalidatePath(`/firmalar/${firma_id}`);
+  revalidatePath("/tablolar");
+  revalidatePath("/stok-hareketleri");
   redirect("/siparisler");
+}
+
+function revalidateSiparisEffects(firma_id?: string | null) {
+  revalidatePath("/siparisler");
+  revalidatePath("/urunler");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/tablolar");
+  revalidatePath("/stok-hareketleri");
+  if (firma_id) revalidatePath(`/firmalar/${firma_id}`);
 }
 
 export async function updateDurum(id: string, durum: SiparisDurum) {
@@ -69,9 +80,13 @@ export async function updateDurum(id: string, durum: SiparisDurum) {
     .select("firma_id")
     .single();
   if (error) throw new Error(error.message);
-  revalidatePath("/siparisler");
-  revalidatePath("/dashboard");
-  revalidatePath("/urunler");
-  revalidatePath("/dashboard", "layout");
-  if (data?.firma_id) revalidatePath(`/firmalar/${data.firma_id}`);
+  revalidateSiparisEffects(data?.firma_id);
+}
+
+export async function bulkUpdateDurum(ids: string[], durum: SiparisDurum) {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase.from("siparisler").update({ durum }).in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidateSiparisEffects();
 }

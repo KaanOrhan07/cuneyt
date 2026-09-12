@@ -41,6 +41,17 @@ export type SiparisKalemi = {
   created_at: string;
 };
 
+export type StokYon = "giris" | "cikis";
+
+export type StokHareketi = {
+  id: string;
+  urun_id: string;
+  siparis_id: string | null;
+  yon: StokYon;
+  adet: number;
+  tarih: string;
+};
+
 export const DURUM_LABEL: Record<SiparisDurum, string> = {
   beklemede: "Beklemede",
   yolda: "Yolda",

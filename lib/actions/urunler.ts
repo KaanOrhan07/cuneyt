@@ -51,3 +51,32 @@ export async function deleteUrun(id: string) {
   revalidatePath("/urunler");
   revalidatePath("/dashboard", "layout");
 }
+
+export async function bulkDeleteUrun(ids: string[]) {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("urunler")
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/urunler");
+  revalidatePath("/dashboard", "layout");
+}
+
+export async function updateUrunField(
+  id: string,
+  field: "ad" | "stok_adet" | "ortalama_maliyet" | "satis_fiyati" | "kritik_stok_esigi",
+  value: string | number,
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("urunler")
+    .update({ [field]: value })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/urunler");
+  revalidatePath("/dashboard", "layout");
+}
