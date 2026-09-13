@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, Select } from "@/components/ui";
 import { DurumSelect } from "@/components/durum-select";
 import { SiparisDeleteButton } from "@/components/siparis-delete-button";
-import { formatTL, formatTarihSaat } from "@/lib/format";
+import { formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
 import type { Firma, SiparisDurum, SiparisTip, Urun } from "@/lib/types";
 
 type Filters = {
@@ -25,7 +25,9 @@ export default async function SiparislerPage({
 
   let query = supabase
     .from("siparisler")
-    .select("id, tip, durum, tarih_saat, firmalar(id, ad, renk), siparis_kalemleri(adet, birim_fiyat, urun_id, urunler(ad))")
+    .select(
+      "id, tip, durum, tarih_saat, son_teslim_tarihi, firmalar(id, ad, renk), siparis_kalemleri(adet, birim_fiyat, urun_id, urunler(ad))",
+    )
     .order("tarih_saat", { ascending: false });
 
   if (filters.tip) query = query.eq("tip", filters.tip);
@@ -34,7 +36,7 @@ export default async function SiparislerPage({
   if (filters.baslangic) query = query.gte("tarih_saat", filters.baslangic);
   if (filters.bitis) query = query.lte("tarih_saat", filters.bitis);
 
-  const { data: siparisler } = await query;
+  const { data: siparisler, error: siparisHata } = await query;
 
   const [{ data: firmalar }, { data: urunler }] = await Promise.all([
     supabase.from("firmalar").select("*").is("deleted_at", null).order("ad"),
@@ -58,6 +60,12 @@ export default async function SiparislerPage({
           <Button>+ Yeni Sipariş</Button>
         </Link>
       </div>
+
+      {siparisHata && (
+        <p className="mb-4 rounded-lg bg-orange-soft px-3 py-2 text-[12.5px] text-orange">
+          Veritabanı güncellemesi (migration) henüz çalıştırılmamış: {siparisHata.message}
+        </p>
+      )}
 
       <form className="mb-5 flex flex-wrap gap-2.5">
         <Select name="tip" defaultValue={filters.tip ?? ""}>
@@ -114,6 +122,7 @@ export default async function SiparislerPage({
               <th className="pb-2.5 text-left font-semibold">Tip</th>
               <th className="pb-2.5 text-left font-semibold">Ürünler</th>
               <th className="pb-2.5 text-left font-semibold">Tutar</th>
+              <th className="pb-2.5 text-left font-semibold">Son Teslim</th>
               <th className="pb-2.5 text-left font-semibold">Durum</th>
               <th className="pb-2.5 text-left font-semibold" />
             </tr>
@@ -127,6 +136,11 @@ export default async function SiparislerPage({
                 urunler: { ad: string } | null;
               }[];
               const toplam = kalemler.reduce((sum, k) => sum + k.adet * k.birim_fiyat, 0);
+              const teslimGecti =
+                s.son_teslim_tarihi &&
+                s.durum !== "teslim_edildi" &&
+                s.durum !== "iptal_edildi" &&
+                new Date(s.son_teslim_tarihi) < new Date();
               return (
                 <tr key={s.id} className="border-b border-border last:border-0">
                   <td className="py-2.5 font-mono">
@@ -143,6 +157,9 @@ export default async function SiparislerPage({
                   </td>
                   <td className="py-2.5">{kalemler.map((k) => k.urunler?.ad).join(", ")}</td>
                   <td className="py-2.5 font-mono">{formatTL(toplam)}</td>
+                  <td className={`py-2.5 font-mono ${teslimGecti ? "font-semibold text-orange" : "text-text-dim"}`}>
+                    {s.son_teslim_tarihi ? formatTarih(s.son_teslim_tarihi) : "—"}
+                  </td>
                   <td className="py-2.5">
                     <DurumSelect id={s.id} durum={s.durum as SiparisDurum} />
                   </td>
@@ -154,7 +171,7 @@ export default async function SiparislerPage({
             })}
             {filtered?.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-4 text-text-dim">
+                <td colSpan={8} className="py-4 text-text-dim">
                   Kayıt bulunamadı.
                 </td>
               </tr>

@@ -4,16 +4,22 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data: urunler } = await supabase
-    .from("urunler")
-    .select("stok_adet, kritik_stok_esigi")
-    .is("deleted_at", null);
+  const [{ data: urunler }, { data: gecikenler }] = await Promise.all([
+    supabase.from("urunler").select("stok_adet, kritik_stok_esigi").is("deleted_at", null),
+    supabase
+      .from("siparisler")
+      .select("id")
+      .not("son_teslim_tarihi", "is", null)
+      .not("durum", "in", "(teslim_edildi,iptal_edildi)")
+      .lt("son_teslim_tarihi", new Date().toISOString()),
+  ]);
   const kritikStokSayisi =
     urunler?.filter((u) => u.stok_adet <= u.kritik_stok_esigi).length ?? 0;
+  const gecikenTeslimatSayisi = gecikenler?.length ?? 0;
 
   return (
     <div className="grid min-h-screen grid-cols-[240px_1fr]">
-      <Sidebar kritikStokSayisi={kritikStokSayisi} />
+      <Sidebar kritikStokSayisi={kritikStokSayisi} gecikenTeslimatSayisi={gecikenTeslimatSayisi} />
       <div className="flex min-w-0 flex-col">
         <div className="flex justify-end border-b border-border px-8 py-3">
           <form action={logout}>

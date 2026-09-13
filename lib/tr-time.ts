@@ -46,3 +46,33 @@ export function istanbulDaysAgo(n: number) {
   utcNoon.setUTCDate(utcNoon.getUTCDate() - n);
   return { year: utcNoon.getUTCFullYear(), month: utcNoon.getUTCMonth() + 1, day: utcNoon.getUTCDate() };
 }
+
+/** Bugünün İstanbul takviminde bulunduğu haftanın (Pazartesi-Pazar) başlangıç/bitiş UTC anlarını döner. */
+export function istanbulHaftaAraligi() {
+  const { year, month, day } = istanbulToday();
+  const utcNoon = new Date(Date.UTC(year, month - 1, day, 12));
+  const dow = utcNoon.getUTCDay(); // 0=Paz, 1=Pzt, ... 6=Cmt
+  const pazartesiFarki = dow === 0 ? -6 : 1 - dow;
+  const pazartesi = new Date(utcNoon);
+  pazartesi.setUTCDate(pazartesi.getUTCDate() + pazartesiFarki);
+  const baslangic = istanbulMidnightUTC(pazartesi.getUTCFullYear(), pazartesi.getUTCMonth() + 1, pazartesi.getUTCDate());
+  const bitis = new Date(baslangic.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+  return { baslangic, bitis };
+}
+
+/** Bugünün İstanbul takviminde bulunduğu ayın başlangıç/bitiş UTC anlarını döner. */
+export function istanbulAyAraligi() {
+  const { year, month } = istanbulToday();
+  const baslangic = istanbulMidnightUTC(year, month, 1);
+  const sonrakiAy = istanbulMidnightUTC(month === 12 ? year + 1 : year, month === 12 ? 1 : month + 1, 1);
+  const bitis = new Date(sonrakiAy.getTime() - 1);
+  return { baslangic, bitis };
+}
+
+/** Bugünün İstanbul takviminde bulunduğu yılın başlangıç/bitiş UTC anlarını döner. */
+export function istanbulYilAraligi() {
+  const { year } = istanbulToday();
+  const baslangic = istanbulMidnightUTC(year, 1, 1);
+  const bitis = new Date(istanbulMidnightUTC(year + 1, 1, 1).getTime() - 1);
+  return { baslangic, bitis };
+}

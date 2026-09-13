@@ -82,6 +82,10 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
             <option value="teslim_edildi">Teslim edildi</option>
           </Select>
         </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Son Teslim Tarihi (opsiyonel)</Label>
+          <Input type="date" name="son_teslim_tarihi" />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

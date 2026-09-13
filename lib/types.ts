@@ -29,6 +29,7 @@ export type Siparis = {
   tip: SiparisTip;
   durum: SiparisDurum;
   tarih_saat: string;
+  son_teslim_tarihi: string | null;
   created_at: string;
 };
 
@@ -57,4 +58,49 @@ export const DURUM_LABEL: Record<SiparisDurum, string> = {
   yolda: "Yolda",
   teslim_edildi: "Teslim edildi",
   iptal_edildi: "İptal edildi",
+};
+
+export type TeklifDurum = "beklemede" | "kabul_edildi" | "reddedildi";
+
+export type Teklif = {
+  id: string;
+  firma_id: string;
+  tip: SiparisTip;
+  durum: TeklifDurum;
+  tarih_saat: string;
+  created_at: string;
+};
+
+export type TeklifKalemi = {
+  id: string;
+  teklif_id: string;
+  urun_id: string;
+  adet: number;
+  birim_fiyat: number;
+  created_at: string;
+};
+
+export const TEKLIF_DURUM_LABEL: Record<TeklifDurum, string> = {
+  beklemede: "Beklemede",
+  kabul_edildi: "Kabul edildi",
+  reddedildi: "Reddedildi",
+};
+
+export type CariHareket = {
+  id: string;
+  firma_id: string;
+  tarih: string;
+  fatura_no: string | null;
+  tutar: number;
+  vade_tarihi: string | null;
+  aciklama: string | null;
+  created_at: string;
+};
+
+export type CariOdeme = {
+  id: string;
+  cari_hareket_id: string;
+  tarih: string;
+  tutar: number;
+  created_at: string;
 };

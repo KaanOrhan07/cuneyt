@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/firmalar", label: "Firmalar" },
   { href: "/siparisler", label: "Siparişler" },
+  { href: "/teslimatlar", label: "Teslimatlar" },
   { href: "/urunler", label: "Ürünler / Stok" },
   { href: "/tablolar", label: "Tablolar" },
   { href: "/ditables", label: "DiTables" },
@@ -16,8 +17,18 @@ const NAV_ITEMS = [
   { href: "/raporlar", label: "Raporlar" },
 ];
 
-export function Sidebar({ kritikStokSayisi = 0 }: { kritikStokSayisi?: number }) {
+export function Sidebar({
+  kritikStokSayisi = 0,
+  gecikenTeslimatSayisi = 0,
+}: {
+  kritikStokSayisi?: number;
+  gecikenTeslimatSayisi?: number;
+}) {
   const pathname = usePathname();
+  const rozetler: Record<string, number> = {
+    "/urunler": kritikStokSayisi,
+    "/teslimatlar": gecikenTeslimatSayisi,
+  };
 
   return (
     <aside className="flex w-[240px] flex-col gap-7 border-r border-border bg-bg-elev px-4 py-6">
@@ -48,12 +59,12 @@ export function Sidebar({ kritikStokSayisi = 0 }: { kritikStokSayisi?: number })
               }`}
             >
               <span>{item.label}</span>
-              {item.href === "/urunler" && kritikStokSayisi > 0 && (
+              {rozetler[item.href] > 0 && (
                 <span
                   className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10.5px] font-semibold text-white"
                   style={{ background: active ? "rgba(255,255,255,0.25)" : "var(--orange)" }}
                 >
-                  {kritikStokSayisi}
+                  {rozetler[item.href]}
                 </span>
               )}
             </Link>
