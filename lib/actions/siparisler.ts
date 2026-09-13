@@ -90,3 +90,23 @@ export async function bulkUpdateDurum(ids: string[], durum: SiparisDurum) {
   if (error) throw new Error(error.message);
   revalidateSiparisEffects();
 }
+
+export async function deleteSiparis(id: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("siparisler")
+    .delete()
+    .eq("id", id)
+    .select("firma_id")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidateSiparisEffects(data?.firma_id);
+}
+
+export async function bulkDeleteSiparis(ids: string[]) {
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase.from("siparisler").delete().in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidateSiparisEffects();
+}

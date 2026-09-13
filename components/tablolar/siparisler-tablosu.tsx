@@ -5,7 +5,7 @@ import { BulkBar, SortableHeader, XL_ROW_NUM, XL_TD, XL_TH, sortRows, type SortD
 import { ExportExcelButton } from "@/components/export-excel-button";
 import { DurumSelect } from "@/components/durum-select";
 import { Badge } from "@/components/ui";
-import { bulkUpdateDurum } from "@/lib/actions/siparisler";
+import { bulkDeleteSiparis, bulkUpdateDurum } from "@/lib/actions/siparisler";
 import { formatTL, formatTarihSaat } from "@/lib/format";
 import { DURUM_LABEL, type SiparisDurum, type SiparisTip } from "@/lib/types";
 
@@ -25,6 +25,7 @@ export function SiparislerTablosu({ siparisler }: { siparisler: SiparisSatiri[] 
   const [sortKey, setSortKey] = useState<SortKey>("tarih_saat");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [hata, setHata] = useState<string | null>(null);
 
   const rows = useMemo(() => sortRows(siparisler, sortKey, sortDir), [siparisler, sortKey, sortDir]);
 
@@ -49,6 +50,9 @@ export function SiparislerTablosu({ siparisler }: { siparisler: SiparisSatiri[] 
 
   return (
     <div>
+      {hata && (
+        <p className="mb-2 rounded-lg bg-orange-soft px-3 py-2 text-[12.5px] text-orange">{hata}</p>
+      )}
       <BulkBar count={selected.size} onClear={() => setSelected(new Set())}>
         {(["beklemede", "yolda", "teslim_edildi", "iptal_edildi"] as SiparisDurum[]).map((d) => (
           <button
@@ -65,6 +69,27 @@ export function SiparislerTablosu({ siparisler }: { siparisler: SiparisSatiri[] 
             {DURUM_LABEL[d]} yap
           </button>
         ))}
+        <button
+          onClick={async () => {
+            if (
+              !confirm(
+                `${selected.size} siparişi KALICI olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`,
+              )
+            ) {
+              return;
+            }
+            setHata(null);
+            try {
+              await bulkDeleteSiparis([...selected]);
+              setSelected(new Set());
+            } catch (err) {
+              setHata(err instanceof Error ? err.message : "Silme işlemi başarısız oldu.");
+            }
+          }}
+          className="rounded-md border border-orange px-2.5 py-1 text-[12px] font-medium text-orange hover:bg-orange-soft"
+        >
+          Kalıcı Sil
+        </button>
       </BulkBar>
 
       <div className="mb-2 flex justify-end">

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Panel } from "@/components/ui";
 import { DurumSelect } from "@/components/durum-select";
+import { SiparisDeleteButton } from "@/components/siparis-delete-button";
 import { formatTL, formatTarihSaat } from "@/lib/format";
 import type { SiparisDurum } from "@/lib/types";
 
@@ -75,6 +76,7 @@ export default async function FirmaDetailPage({
               <th className="pb-2.5 text-left font-semibold">Ürünler</th>
               <th className="pb-2.5 text-left font-semibold">Tutar</th>
               <th className="pb-2.5 text-left font-semibold">Durum</th>
+              <th className="pb-2.5 text-left font-semibold" />
             </tr>
           </thead>
           <tbody>
@@ -97,12 +99,15 @@ export default async function FirmaDetailPage({
                   <td className="py-2.5">
                     <DurumSelect id={s.id} durum={s.durum as SiparisDurum} />
                   </td>
+                  <td className="py-2.5">
+                    <SiparisDeleteButton id={s.id} />
+                  </td>
                 </tr>
               );
             })}
             {siparisler?.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-4 text-text-dim">
+                <td colSpan={5} className="py-4 text-text-dim">
                   Bu firmaya ait {tip === "alis" ? "gelen" : "giden"} sipariş yok.
                 </td>
               </tr>

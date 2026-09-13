@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, Select } from "@/components/ui";
 import { DurumSelect } from "@/components/durum-select";
+import { SiparisDeleteButton } from "@/components/siparis-delete-button";
 import { formatTL, formatTarihSaat } from "@/lib/format";
 import type { Firma, SiparisDurum, SiparisTip, Urun } from "@/lib/types";
 
@@ -114,6 +115,7 @@ export default async function SiparislerPage({
               <th className="pb-2.5 text-left font-semibold">Ürünler</th>
               <th className="pb-2.5 text-left font-semibold">Tutar</th>
               <th className="pb-2.5 text-left font-semibold">Durum</th>
+              <th className="pb-2.5 text-left font-semibold" />
             </tr>
           </thead>
           <tbody>
@@ -144,12 +146,15 @@ export default async function SiparislerPage({
                   <td className="py-2.5">
                     <DurumSelect id={s.id} durum={s.durum as SiparisDurum} />
                   </td>
+                  <td className="py-2.5">
+                    <SiparisDeleteButton id={s.id} />
+                  </td>
                 </tr>
               );
             })}
             {filtered?.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 text-text-dim">
+                <td colSpan={7} className="py-4 text-text-dim">
                   Kayıt bulunamadı.
                 </td>
               </tr>
