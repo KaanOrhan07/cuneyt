@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="grid min-h-screen grid-cols-[240px_1fr]">
       <Sidebar kritikStokSayisi={kritikStokSayisi} />
-      <div className="flex flex-col">
+      <div className="flex min-w-0 flex-col">
         <div className="flex justify-end border-b border-border px-8 py-3">
           <form action={logout}>
             <button
@@ -25,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </button>
           </form>
         </div>
-        <main className="flex-1 px-8 py-7">{children}</main>
+        <main className="min-w-0 flex-1 px-8 py-7">{children}</main>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/siparisler", label: "Siparişler" },
   { href: "/urunler", label: "Ürünler / Stok" },
   { href: "/tablolar", label: "Tablolar" },
+  { href: "/ditables", label: "DiTables" },
   { href: "/stok-hareketleri", label: "Stok Hareketleri" },
   { href: "/raporlar", label: "Raporlar" },
 ];
