@@ -4,21 +4,9 @@ import { useRef, useState } from "react";
 import { bulkImportUrunler, type UrunImportSatiri } from "@/lib/actions/urunler";
 import { bulkImportFirmalar, type FirmaImportSatiri } from "@/lib/actions/firmalar";
 import { Button, Select } from "@/components/ui";
+import { bulKolon, evetMi, sayiDegeri } from "@/lib/excel-import-helpers";
 
 type Sablon = "urun" | "firma";
-
-const norm = (s: string) => s.trim().toLocaleLowerCase("tr-TR");
-
-function evetMi(v: unknown) {
-  const s = norm(String(v ?? ""));
-  return s === "evet" || s === "true" || s === "1" || s === "x" || s === "yes";
-}
-
-function sayi(v: unknown): number | undefined {
-  if (v === undefined || v === null || v === "") return undefined;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : undefined;
-}
 
 export function ExcelImport() {
   const [sablon, setSablon] = useState<Sablon>("urun");
@@ -42,14 +30,7 @@ export function ExcelImport() {
     setRows(json);
   }
 
-  function bul(row: Record<string, unknown>, ...adaylar: string[]) {
-    const anahtarlar = Object.keys(row);
-    for (const aday of adaylar) {
-      const bulunan = anahtarlar.find((k) => norm(k) === norm(aday));
-      if (bulunan) return row[bulunan];
-    }
-    return undefined;
-  }
+  const bul = bulKolon;
 
   async function iceAktar() {
     setYukleniyor(true);
@@ -59,10 +40,10 @@ export function ExcelImport() {
         const veri: UrunImportSatiri[] = rows.map((r) => ({
           ad: String(bul(r, "Ürün Adı", "Urun Adi", "Ad") ?? ""),
           fotograf_url: String(bul(r, "Fotoğraf URL", "Fotograf URL") ?? "") || undefined,
-          stok_adet: sayi(bul(r, "Stok Adedi", "Stok")),
-          ortalama_maliyet: sayi(bul(r, "Ortalama Maliyet", "Maliyet")),
-          satis_fiyati: sayi(bul(r, "Satış Fiyatı", "Satis Fiyati")),
-          kritik_stok_esigi: sayi(bul(r, "Kritik Stok Eşiği", "Kritik Esik")),
+          stok_adet: sayiDegeri(bul(r, "Stok Adedi", "Stok")),
+          ortalama_maliyet: sayiDegeri(bul(r, "Ortalama Maliyet", "Maliyet")),
+          satis_fiyati: sayiDegeri(bul(r, "Satış Fiyatı", "Satis Fiyati")),
+          kritik_stok_esigi: sayiDegeri(bul(r, "Kritik Stok Eşiği", "Kritik Esik")),
         }));
         const sonuc = await bulkImportUrunler(veri);
         setDurum({ tip: "ok", mesaj: `${sonuc.eklenen} ürün başarıyla eklendi.` });

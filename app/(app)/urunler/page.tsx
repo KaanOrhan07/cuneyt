@@ -4,6 +4,7 @@ import { UrunForm } from "@/components/urun-form";
 import { UrunRow } from "@/components/urun-row";
 import { Input, Panel } from "@/components/ui";
 import { ExportExcelButton } from "@/components/export-excel-button";
+import { ImportExcelButton } from "@/components/import-excel-button";
 import type { Urun } from "@/lib/types";
 
 export default async function UrunlerPage({
@@ -28,17 +29,20 @@ export default async function UrunlerPage({
           <h1 className="font-display text-[22px] font-semibold">Ürünler / Stok</h1>
           <p className="mt-0.5 text-[13px] text-text-dim">Stok adedi, maliyet ve satış fiyatlarını yönetin</p>
         </div>
-        <ExportExcelButton
-          filename="urunler"
-          sheetName="Ürünler"
-          rows={(urunler ?? []).map((u) => ({
-            Ürün: u.ad,
-            Stok: u.stok_adet,
-            "Ort. Maliyet": u.ortalama_maliyet,
-            "Satış Fiyatı": u.satis_fiyati,
-            "Kritik Eşik": u.kritik_stok_esigi,
-          }))}
-        />
+        <div className="flex items-center gap-2">
+          <ImportExcelButton tip="urun" />
+          <ExportExcelButton
+            filename="urunler"
+            sheetName="Ürünler"
+            rows={(urunler ?? []).map((u) => ({
+              Ürün: u.ad,
+              Stok: u.stok_adet,
+              "Ort. Maliyet": u.ortalama_maliyet,
+              "Satış Fiyatı": u.satis_fiyati,
+              "Kritik Eşik": u.kritik_stok_esigi,
+            }))}
+          />
+        </div>
       </div>
 
       <UrunForm />
