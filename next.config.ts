@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  outputFileTracingIncludes: {
+    "/api/siparisler/\\[id\\]/pdf": ["./lib/pdf/fonts/**/*"],
+  },
 };
 
 export default nextConfig;

@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { createSiparis, type SiparisState } from "@/lib/actions/siparisler";
 import { Button, Input, Label, Select } from "@/components/ui";
+import { formatTL } from "@/lib/format";
 import type { Firma, Urun } from "@/lib/types";
 
 type Row = { urun_id: string; adet: string; birim_fiyat: string };
@@ -33,6 +34,11 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
   function updateRow(i: number, patch: Partial<Row>) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
+
+  const [kdvOrani, setKdvOrani] = useState("20");
+  const araToplam = rows.reduce((s, r) => s + (Number(r.adet) || 0) * (Number(r.birim_fiyat) || 0), 0);
+  const kdvTutari = araToplam * ((Number(kdvOrani) || 0) / 100);
+  const genelToplam = araToplam + kdvTutari;
 
   return (
     <form
@@ -88,6 +94,23 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
         </div>
       </div>
 
+      <div className="flex gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label>Sipariş No</Label>
+          <Input name="siparis_no" placeholder="Örn. SP-2026-001" className="w-48" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>KDV Oranı (%)</Label>
+          <Input
+            type="number"
+            name="kdv_orani"
+            value={kdvOrani}
+            onChange={(e) => setKdvOrani(e.target.value)}
+            className="w-28"
+          />
+        </div>
+      </div>
+
       <div className="flex flex-col gap-2">
         <Label>Ürünler</Label>
         {rows.map((row, i) => (
@@ -137,6 +160,21 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
         >
           + Ürün satırı ekle
         </button>
+      </div>
+
+      <div className="flex flex-col items-end gap-1 rounded-[10px] border border-border bg-bg-elev px-4 py-3 text-[13px]">
+        <div className="flex w-48 justify-between text-text-dim">
+          <span>Ara Toplam</span>
+          <span className="font-mono">{formatTL(araToplam)}</span>
+        </div>
+        <div className="flex w-48 justify-between text-text-dim">
+          <span>KDV (%{kdvOrani || 0})</span>
+          <span className="font-mono">{formatTL(kdvTutari)}</span>
+        </div>
+        <div className="flex w-48 justify-between border-t border-border pt-1 font-semibold">
+          <span>Genel Toplam</span>
+          <span className="font-mono">{formatTL(genelToplam)}</span>
+        </div>
       </div>
 
       {stokUyarilari.length > 0 && (

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FirmaForm } from "@/components/firma-form";
 import { deleteFirma } from "@/lib/actions/firmalar";
 import { Input } from "@/components/ui";
+import { ExportExcelButton } from "@/components/export-excel-button";
 import type { Firma } from "@/lib/types";
 
 export default async function FirmalarPage({
@@ -38,6 +39,16 @@ export default async function FirmalarPage({
           <h1 className="font-display text-[22px] font-semibold">Firmalar</h1>
           <p className="mt-0.5 text-[13px] text-text-dim">Tedarikçi ve müşteri firmaları yönetin</p>
         </div>
+        <ExportExcelButton
+          filename="firmalar"
+          sheetName="Firmalar"
+          rows={(firmalar as Firma[] | null ?? []).map((f) => ({
+            Firma: f.ad,
+            Renk: f.renk,
+            Tedarikçi: f.is_tedarikci ? "Evet" : "Hayır",
+            Müşteri: f.is_musteri ? "Evet" : "Hayır",
+          }))}
+        />
       </div>
 
       <FirmaForm />

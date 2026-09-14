@@ -18,6 +18,8 @@ export async function createSiparis(
   const tip = formData.get("tip") as SiparisTip;
   const durum = formData.get("durum") as SiparisDurum;
   const son_teslim_tarihi = (formData.get("son_teslim_tarihi") as string) || null;
+  const siparis_no = (formData.get("siparis_no") as string) || null;
+  const kdv_orani = Number(formData.get("kdv_orani") ?? 20);
   const kalemlerRaw = formData.get("kalemler") as string;
 
   let kalemler: KalemInput[] = [];
@@ -33,7 +35,7 @@ export async function createSiparis(
 
   const { data: siparis, error: siparisError } = await supabase
     .from("siparisler")
-    .insert({ firma_id, tip, durum, son_teslim_tarihi })
+    .insert({ firma_id, tip, durum, son_teslim_tarihi, siparis_no, kdv_orani })
     .select("id")
     .single();
 
@@ -124,4 +126,16 @@ export async function bulkDeleteSiparis(ids: string[]) {
   const { error } = await supabase.from("siparisler").delete().in("id", ids);
   if (error) throw new Error(error.message);
   revalidateSiparisEffects();
+}
+
+export async function updateTeslimEdilenAdet(kalemId: string, siparisId: string, adet: number) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("siparis_kalemleri")
+    .update({ teslim_edilen_adet: adet })
+    .eq("id", kalemId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/siparisler");
+  revalidatePath(`/siparisler/${siparisId}`);
+  revalidatePath("/tablolar");
 }

@@ -26,7 +26,7 @@ export default async function SiparislerPage({
   let query = supabase
     .from("siparisler")
     .select(
-      "id, tip, durum, tarih_saat, son_teslim_tarihi, firmalar(id, ad, renk), siparis_kalemleri(adet, birim_fiyat, urun_id, urunler(ad))",
+      "id, tip, durum, tarih_saat, son_teslim_tarihi, siparis_no, firmalar(id, ad, renk), siparis_kalemleri(adet, birim_fiyat, urun_id, urunler(ad))",
     )
     .order("tarih_saat", { ascending: false });
 
@@ -117,6 +117,7 @@ export default async function SiparislerPage({
         <table className="w-full text-[13px]">
           <thead>
             <tr className="border-b border-border text-[11px] uppercase tracking-wide text-text-dim">
+              <th className="pb-2.5 text-left font-semibold">Sipariş No</th>
               <th className="pb-2.5 text-left font-semibold">Tarih</th>
               <th className="pb-2.5 text-left font-semibold">Firma</th>
               <th className="pb-2.5 text-left font-semibold">Tip</th>
@@ -143,6 +144,11 @@ export default async function SiparislerPage({
                 new Date(s.son_teslim_tarihi) < new Date();
               return (
                 <tr key={s.id} className="border-b border-border last:border-0">
+                  <td className="py-2.5">
+                    <Link href={`/siparisler/${s.id}`} className="font-medium text-green hover:underline">
+                      {s.siparis_no || "Detay →"}
+                    </Link>
+                  </td>
                   <td className="py-2.5 font-mono">
                     {formatTarihSaat(s.tarih_saat)}
                   </td>
@@ -171,7 +177,7 @@ export default async function SiparislerPage({
             })}
             {filtered?.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-4 text-text-dim">
+                <td colSpan={9} className="py-4 text-text-dim">
                   Kayıt bulunamadı.
                 </td>
               </tr>

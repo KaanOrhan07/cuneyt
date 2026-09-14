@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UrunForm } from "@/components/urun-form";
 import { UrunRow } from "@/components/urun-row";
 import { Input, Panel } from "@/components/ui";
+import { ExportExcelButton } from "@/components/export-excel-button";
 import type { Urun } from "@/lib/types";
 
 export default async function UrunlerPage({
@@ -22,9 +23,22 @@ export default async function UrunlerPage({
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="font-display text-[22px] font-semibold">Ürünler / Stok</h1>
-        <p className="mt-0.5 text-[13px] text-text-dim">Stok adedi, maliyet ve satış fiyatlarını yönetin</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-[22px] font-semibold">Ürünler / Stok</h1>
+          <p className="mt-0.5 text-[13px] text-text-dim">Stok adedi, maliyet ve satış fiyatlarını yönetin</p>
+        </div>
+        <ExportExcelButton
+          filename="urunler"
+          sheetName="Ürünler"
+          rows={(urunler ?? []).map((u) => ({
+            Ürün: u.ad,
+            Stok: u.stok_adet,
+            "Ort. Maliyet": u.ortalama_maliyet,
+            "Satış Fiyatı": u.satis_fiyati,
+            "Kritik Eşik": u.kritik_stok_esigi,
+          }))}
+        />
       </div>
 
       <UrunForm />

@@ -44,7 +44,7 @@ export default async function FirmaDetailPage({
         .order("tarih_saat", { ascending: false }),
       supabase
         .from("teklifler")
-        .select("id, tip, durum, tarih_saat, teklif_kalemleri(adet, birim_fiyat, urunler(ad))")
+        .select("id, tip, durum, tarih_saat, teklif_no, teklif_kalemleri(adet, birim_fiyat, urunler(ad))")
         .eq("firma_id", id)
         .order("tarih_saat", { ascending: false }),
       supabase.from("urunler").select("*").is("deleted_at", null).order("ad"),
@@ -212,6 +212,7 @@ export default async function FirmaDetailPage({
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-border text-[11px] uppercase tracking-wide text-text-dim">
+                  <th className="pb-2.5 text-left font-semibold">Teklif No</th>
                   <th className="pb-2.5 text-left font-semibold">Tarih</th>
                   <th className="pb-2.5 text-left font-semibold">Tip</th>
                   <th className="pb-2.5 text-left font-semibold">Ürünler</th>
@@ -229,6 +230,7 @@ export default async function FirmaDetailPage({
                   const toplam = kalemler.reduce((sum, k) => sum + k.adet * k.birim_fiyat, 0);
                   return (
                     <tr key={t.id} className="border-b border-border last:border-0">
+                      <td className="py-2.5 font-mono font-medium">{t.teklif_no || "—"}</td>
                       <td className="py-2.5 font-mono">{formatTarihSaat(t.tarih_saat)}</td>
                       <td className="py-2.5">{t.tip === "alis" ? "Alış" : "Satış"}</td>
                       <td className="py-2.5">{kalemler.map((k) => k.urunler?.ad).join(", ")}</td>
@@ -241,7 +243,7 @@ export default async function FirmaDetailPage({
                 })}
                 {teklifler?.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-4 text-text-dim">
+                    <td colSpan={6} className="py-4 text-text-dim">
                       Bu firmaya ait teklif yok.
                     </td>
                   </tr>

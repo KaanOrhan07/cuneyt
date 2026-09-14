@@ -30,6 +30,8 @@ export type Siparis = {
   durum: SiparisDurum;
   tarih_saat: string;
   son_teslim_tarihi: string | null;
+  siparis_no: string | null;
+  kdv_orani: number;
   created_at: string;
 };
 
@@ -39,6 +41,7 @@ export type SiparisKalemi = {
   urun_id: string;
   adet: number;
   birim_fiyat: number;
+  teslim_edilen_adet: number;
   created_at: string;
 };
 
@@ -68,6 +71,7 @@ export type Teklif = {
   tip: SiparisTip;
   durum: TeklifDurum;
   tarih_saat: string;
+  teklif_no: string | null;
   created_at: string;
 };
 
