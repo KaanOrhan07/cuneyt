@@ -27,11 +27,15 @@ function tl(n: number) {
 }
 
 export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Array> {
-  const fontBytes = await fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Regular.ttf"));
+  const [fontBytes, fontBoldBytes] = await Promise.all([
+    fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Regular.ttf")),
+    fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Bold.ttf")),
+  ]);
 
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
   const font = await pdf.embedFont(fontBytes, { subset: true });
+  const fontBold = await pdf.embedFont(fontBoldBytes, { subset: true });
 
   const solMargin = 48;
   const sagMargin = A4[0] - 48;
@@ -43,13 +47,19 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
     metin: string,
     x: number,
     yPos: number,
-    opts: { boyut?: number; renk?: ReturnType<typeof rgb>; hizalama?: "sol" | "sag" } = {},
+    opts: {
+      boyut?: number;
+      renk?: ReturnType<typeof rgb>;
+      hizalama?: "sol" | "sag";
+      kalin?: boolean;
+    } = {},
   ) {
     const boyut = opts.boyut ?? 10;
     const renk = opts.renk ?? SIYAH;
-    const genislik = font.widthOfTextAtSize(metin, boyut);
+    const kullanilanFont = opts.kalin ? fontBold : font;
+    const genislik = kullanilanFont.widthOfTextAtSize(metin, boyut);
     const cizimX = opts.hizalama === "sag" ? x - genislik : x;
-    sayfa.drawText(metin, { x: cizimX, y: yPos, size: boyut, font, color: renk });
+    sayfa.drawText(metin, { x: cizimX, y: yPos, size: boyut, font: kullanilanFont, color: renk });
   }
 
   function cizgi(yPos: number) {
@@ -82,10 +92,11 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
   }
 
   // Başlık
-  yaz("DiTrack", solMargin, y, { boyut: 20, renk: YESIL });
+  yaz("DiTrack", solMargin, y, { boyut: 20, renk: YESIL, kalin: true });
   yaz(data.tip === "alis" ? "ALIŞ SİPARİŞ FORMU" : "SATIŞ SİPARİŞ FORMU", sagMargin, y, {
     boyut: 14,
     hizalama: "sag",
+    kalin: true,
   });
   y -= 18;
   yaz("Sipariş Takip", solMargin, y, { boyut: 10, renk: GRI });
@@ -101,7 +112,7 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
   yaz("Tarih", solMargin + 220, y, { boyut: 9, renk: GRI });
   yaz("Son Teslim Tarihi", solMargin + 360, y, { boyut: 9, renk: GRI });
   y -= 16;
-  yaz(data.firmaAd, solMargin, y, { boyut: 11 });
+  yaz(data.firmaAd, solMargin, y, { boyut: 11, kalin: true });
   yaz(new Date(data.tarih).toLocaleDateString("tr-TR"), solMargin + 220, y, { boyut: 11 });
   yaz(
     data.sonTeslimTarihi ? new Date(data.sonTeslimTarihi).toLocaleDateString("tr-TR") : "—",
@@ -156,8 +167,8 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
   yaz(`KDV (%${data.kdvOrani})`, ozetX, y, { boyut: 10, renk: GRI });
   yaz(tl(kdvTutari), sagMargin, y, { boyut: 10, hizalama: "sag" });
   y -= 18;
-  yaz("Genel Toplam", ozetX, y, { boyut: 12, renk: YESIL });
-  yaz(tl(genelToplam), sagMargin, y, { boyut: 12, renk: YESIL, hizalama: "sag" });
+  yaz("Genel Toplam", ozetX, y, { boyut: 12, renk: YESIL, kalin: true });
+  yaz(tl(genelToplam), sagMargin, y, { boyut: 12, renk: YESIL, hizalama: "sag", kalin: true });
 
   sayfa.drawText("Created by Digio Medya ve Yazılım", {
     x: solMargin,
