@@ -2,6 +2,7 @@ import { PDFDocument, rgb, type PDFPage, type PDFFont } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { paraBirimiSembol } from "@/lib/format";
 
 const YESIL = rgb(0.157, 0.412, 0.294); // #28694B
 const GRI = rgb(0.431, 0.431, 0.451); // #6E6E73
@@ -23,6 +24,7 @@ export type TeklifPdfData = {
   notlar: string | null;
   iskonto: number;
   kdvOrani: number;
+  paraBirimi: string;
   firma: {
     ad: string;
     adres: string | null;
@@ -43,8 +45,8 @@ export type TeklifPdfData = {
   kalemler: { urunAd: string; adet: number; birimFiyat: number }[];
 };
 
-function tl(n: number) {
-  return `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
+function paraFormat(n: number, sembol: string) {
+  return `${sembol}${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 async function gorseliGom(pdf: PDFDocument, url: string) {
@@ -63,6 +65,7 @@ async function gorseliGom(pdf: PDFDocument, url: string) {
 }
 
 export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array> {
+  const sembol = paraBirimiSembol(data.paraBirimi);
   const [fontBytes, fontBoldBytes] = await Promise.all([
     fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Regular.ttf")),
     fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Bold.ttf")),
@@ -260,7 +263,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     yaz(`Vergi No: ${data.firma.vergiNo}`, solMargin, y, { boyut: 9.5, renk: GRI });
     y -= 13;
   }
-  y -= 10;
+  y -= 22;
 
   // ── Mesaj (selamlama paragrafı) ──
   if (data.mesaj) {
@@ -304,8 +307,8 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     araToplam += tutar;
     yaz(k.urunAd, solMargin, y, { boyut: 10 });
     yaz(String(k.adet), solMargin + 300, y, { boyut: 10, hizalama: "sag" });
-    yaz(tl(k.birimFiyat), solMargin + 420, y, { boyut: 10, hizalama: "sag" });
-    yaz(tl(tutar), sagMargin, y, { boyut: 10, hizalama: "sag" });
+    yaz(paraFormat(k.birimFiyat, sembol), solMargin + 420, y, { boyut: 10, hizalama: "sag" });
+    yaz(paraFormat(tutar, sembol), sagMargin, y, { boyut: 10, hizalama: "sag" });
     y -= 18;
   }
 
@@ -322,18 +325,18 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
 
   const ozetX = solMargin + 320;
   yaz("Ara Toplam", ozetX, y, { boyut: 10, renk: GRI });
-  yaz(tl(araToplam), sagMargin, y, { boyut: 10, hizalama: "sag" });
+  yaz(paraFormat(araToplam, sembol), sagMargin, y, { boyut: 10, hizalama: "sag" });
   y -= 16;
   yaz(`KDV (%${data.kdvOrani})`, ozetX, y, { boyut: 10, renk: GRI });
-  yaz(tl(kdvTutari), sagMargin, y, { boyut: 10, hizalama: "sag" });
+  yaz(paraFormat(kdvTutari, sembol), sagMargin, y, { boyut: 10, hizalama: "sag" });
   y -= 16;
   if (data.iskonto > 0) {
     yaz("İskonto", ozetX, y, { boyut: 10, renk: GRI });
-    yaz(`-${tl(data.iskonto)}`, sagMargin, y, { boyut: 10, hizalama: "sag" });
+    yaz(`-${paraFormat(data.iskonto, sembol)}`, sagMargin, y, { boyut: 10, hizalama: "sag" });
     y -= 16;
   }
   yaz("Genel Toplam", ozetX, y, { boyut: 12, renk: YESIL, kalin: true });
-  yaz(tl(genelToplam), sagMargin, y, { boyut: 12, renk: YESIL, hizalama: "sag", kalin: true });
+  yaz(paraFormat(genelToplam, sembol), sagMargin, y, { boyut: 12, renk: YESIL, hizalama: "sag", kalin: true });
   y -= 30;
 
   // ── Banka bilgisi ──

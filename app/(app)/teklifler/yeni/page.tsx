@@ -20,7 +20,7 @@ export default async function YeniTeklifPage({
     user
       ? supabase.from("ekip_uyeleri").select("ad_soyad").eq("auth_user_id", user.id).maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase.from("sirket_profili").select("varsayilan_notlar").eq("id", true).maybeSingle(),
+    supabase.from("sirket_profili").select("varsayilan_notlar, ozel_sablon_url").eq("id", true).maybeSingle(),
   ]);
 
   const varsayilanSatici = ekip?.ad_soyad ?? user?.email ?? "";
@@ -39,6 +39,7 @@ export default async function YeniTeklifPage({
         varsayilanFirmaId={firma_id}
         varsayilanSatici={varsayilanSatici}
         varsayilanNotlar={sirket?.varsayilan_notlar ?? ""}
+        sirketSablonVarMi={!!sirket?.ozel_sablon_url}
       />
     </div>
   );

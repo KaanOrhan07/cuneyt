@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { createTeklif, type TeklifState } from "@/lib/actions/teklifler";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
-import { formatTL } from "@/lib/format";
+import { formatParaBirimi, PARA_BIRIMLERI, paraBirimiSembol } from "@/lib/format";
 import type { Firma, Urun } from "@/lib/types";
 
 type Row = { urun_id: string; adet: string; birim_fiyat: string };
@@ -14,12 +14,14 @@ export function TeklifOlusturForm({
   varsayilanFirmaId,
   varsayilanSatici,
   varsayilanNotlar,
+  sirketSablonVarMi,
 }: {
   firmalar: Firma[];
   urunler: Urun[];
   varsayilanFirmaId?: string;
   varsayilanSatici?: string;
   varsayilanNotlar?: string;
+  sirketSablonVarMi?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<TeklifState, FormData>(
     createTeklif,
@@ -29,6 +31,7 @@ export function TeklifOlusturForm({
   const [rows, setRows] = useState<Row[]>([{ urun_id: "", adet: "", birim_fiyat: "" }]);
   const [iskonto, setIskonto] = useState("0");
   const [kdvOrani, setKdvOrani] = useState("20");
+  const [paraBirimi, setParaBirimi] = useState("TL");
 
   function updateRow(i: number, patch: Partial<Row>) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -76,6 +79,16 @@ export function TeklifOlusturForm({
           <Select name="tip" value={tip} onChange={(e) => setTip(e.target.value as "alis" | "satis")}>
             <option value="satis">Satış (verilen teklif)</option>
             <option value="alis">Alış (alınan teklif)</option>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Para Birimi</Label>
+          <Select name="para_birimi" value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)}>
+            {PARA_BIRIMLERI.map((pb) => (
+              <option key={pb} value={pb}>
+                {pb} ({paraBirimiSembol(pb)})
+              </option>
+            ))}
           </Select>
         </div>
       </div>
@@ -176,7 +189,7 @@ export function TeklifOlusturForm({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>İskonto (₺)</Label>
+          <Label>İskonto ({paraBirimiSembol(paraBirimi)})</Label>
           <Input
             type="number"
             step="0.01"
@@ -201,23 +214,30 @@ export function TeklifOlusturForm({
       <div className="flex flex-col items-end gap-1 rounded-[10px] border border-border bg-bg-elev px-4 py-3 text-[13px]">
         <div className="flex w-48 justify-between text-text-dim">
           <span>Ara Toplam</span>
-          <span className="font-mono">{formatTL(araToplam)}</span>
+          <span className="font-mono">{formatParaBirimi(araToplam, paraBirimi)}</span>
         </div>
         <div className="flex w-48 justify-between text-text-dim">
           <span>KDV (%{kdvOrani || 0})</span>
-          <span className="font-mono">{formatTL(kdvTutari)}</span>
+          <span className="font-mono">{formatParaBirimi(kdvTutari, paraBirimi)}</span>
         </div>
         {Number(iskonto) > 0 && (
           <div className="flex w-48 justify-between text-text-dim">
             <span>İskonto</span>
-            <span className="font-mono">-{formatTL(Number(iskonto))}</span>
+            <span className="font-mono">-{formatParaBirimi(Number(iskonto), paraBirimi)}</span>
           </div>
         )}
         <div className="flex w-48 justify-between border-t border-border pt-1 font-semibold">
           <span>Genel Toplam</span>
-          <span className="font-mono">{formatTL(genelToplam)}</span>
+          <span className="font-mono">{formatParaBirimi(genelToplam, paraBirimi)}</span>
         </div>
       </div>
+
+      {sirketSablonVarMi && (
+        <label className="flex items-center gap-2 text-[13px]">
+          <input type="checkbox" name="sablon_kullan" defaultChecked className="h-4 w-4" />
+          Şirket şablonunuzu bu teklifte kullan (kapatırsanız DiTrack&apos;in kendi tasarımı kullanılır)
+        </label>
+      )}
 
       {state?.error && (
         <p className="rounded-lg bg-orange-soft px-3 py-2 text-[12.5px] text-orange">{state.error}</p>

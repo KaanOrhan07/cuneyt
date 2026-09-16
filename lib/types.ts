@@ -85,6 +85,8 @@ export type Teklif = {
   notlar: string | null;
   iskonto: number;
   kdv_orani: number;
+  para_birimi: string;
+  sablon_kullan: boolean;
   created_at: string;
 };
 

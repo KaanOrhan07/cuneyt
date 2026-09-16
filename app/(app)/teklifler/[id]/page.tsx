@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel } from "@/components/ui";
 import { TeklifDurumSelect } from "@/components/teklif-durum-select";
-import { formatTL, formatTarihSaat } from "@/lib/format";
+import { formatParaBirimi, formatTarihSaat } from "@/lib/format";
 import type { Firma, SiparisTip, TeklifDurum } from "@/lib/types";
 
 export default async function TeklifDetayPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,6 +34,8 @@ export default async function TeklifDetayPage({ params }: { params: Promise<{ id
   const araToplam = rows.reduce((s, k) => s + k.adet * k.birim_fiyat, 0);
   const kdvTutari = araToplam * ((teklif.kdv_orani ?? 20) / 100);
   const genelToplam = araToplam + kdvTutari - (teklif.iskonto ?? 0);
+  const paraBirimi = teklif.para_birimi ?? "TL";
+  const paraFmt = (n: number) => formatParaBirimi(n, paraBirimi);
 
   return (
     <div>
@@ -96,8 +98,8 @@ export default async function TeklifDetayPage({ params }: { params: Promise<{ id
               <tr key={k.id} className="border-b border-border last:border-0">
                 <td className="py-2.5 font-medium">{k.urunler?.ad ?? "—"}</td>
                 <td className="py-2.5 text-right font-mono">{k.adet}</td>
-                <td className="py-2.5 text-right font-mono">{formatTL(k.birim_fiyat)}</td>
-                <td className="py-2.5 text-right font-mono">{formatTL(k.adet * k.birim_fiyat)}</td>
+                <td className="py-2.5 text-right font-mono">{paraFmt(k.birim_fiyat)}</td>
+                <td className="py-2.5 text-right font-mono">{paraFmt(k.adet * k.birim_fiyat)}</td>
               </tr>
             ))}
           </tbody>
@@ -106,21 +108,21 @@ export default async function TeklifDetayPage({ params }: { params: Promise<{ id
         <div className="mt-4 flex flex-col items-end gap-1 text-[13px]">
           <div className="flex w-48 justify-between text-text-dim">
             <span>Ara Toplam</span>
-            <span className="font-mono">{formatTL(araToplam)}</span>
+            <span className="font-mono">{paraFmt(araToplam)}</span>
           </div>
           <div className="flex w-48 justify-between text-text-dim">
             <span>KDV (%{teklif.kdv_orani ?? 20})</span>
-            <span className="font-mono">{formatTL(kdvTutari)}</span>
+            <span className="font-mono">{paraFmt(kdvTutari)}</span>
           </div>
           {teklif.iskonto > 0 && (
             <div className="flex w-48 justify-between text-text-dim">
               <span>İskonto</span>
-              <span className="font-mono">-{formatTL(teklif.iskonto)}</span>
+              <span className="font-mono">-{paraFmt(teklif.iskonto)}</span>
             </div>
           )}
           <div className="flex w-48 justify-between border-t border-border pt-1 font-semibold">
             <span>Genel Toplam</span>
-            <span className="font-mono">{formatTL(genelToplam)}</span>
+            <span className="font-mono">{paraFmt(genelToplam)}</span>
           </div>
         </div>
       </Panel>

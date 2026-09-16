@@ -4,6 +4,24 @@ export function formatTL(value: number) {
   return `₺${value.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
+export const PARA_BIRIMLERI = ["TL", "USD", "EUR", "GBP"] as const;
+export type ParaBirimi = (typeof PARA_BIRIMLERI)[number];
+
+export const PARA_BIRIMI_SEMBOL: Record<ParaBirimi, string> = {
+  TL: "₺",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+};
+
+export function paraBirimiSembol(paraBirimi: string) {
+  return PARA_BIRIMI_SEMBOL[paraBirimi as ParaBirimi] ?? paraBirimi;
+}
+
+export function formatParaBirimi(value: number, paraBirimi: string = "TL") {
+  return `${paraBirimiSembol(paraBirimi)}${value.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+}
+
 export function formatTarihSaat(value: string | Date) {
   return new Date(value).toLocaleString("tr-TR", { timeZone: TR_TIMEZONE });
 }

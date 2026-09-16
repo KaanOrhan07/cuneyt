@@ -7,7 +7,7 @@ import { SiparisDeleteButton } from "@/components/siparis-delete-button";
 import { TeklifDurumSelect } from "@/components/teklif-durum-select";
 import { CariHesapPanel } from "@/components/cari/cari-hesap-panel";
 import { FirmaIletisimPanel } from "@/components/firma-iletisim-panel";
-import { formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
+import { formatParaBirimi, formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
 import type { CariHareket, CariOdeme, SiparisDurum, TeklifDurum } from "@/lib/types";
 
 type Bolum = "siparisler" | "teklifler" | "cari";
@@ -43,7 +43,9 @@ export default async function FirmaDetailPage({
         .order("tarih_saat", { ascending: false }),
       supabase
         .from("teklifler")
-        .select("id, tip, durum, tarih_saat, teklif_no, teklif_kalemleri(adet, birim_fiyat, urunler(ad))")
+        .select(
+          "id, tip, durum, tarih_saat, teklif_no, para_birimi, teklif_kalemleri(adet, birim_fiyat, urunler(ad))",
+        )
         .eq("firma_id", id)
         .order("tarih_saat", { ascending: false }),
       supabase
@@ -248,7 +250,7 @@ export default async function FirmaDetailPage({
                       <td className="py-2.5 font-mono">{formatTarihSaat(t.tarih_saat)}</td>
                       <td className="py-2.5">{t.tip === "alis" ? "Alış" : "Satış"}</td>
                       <td className="py-2.5">{kalemler.map((k) => k.urunler?.ad).join(", ")}</td>
-                      <td className="py-2.5 font-mono">{formatTL(toplam)}</td>
+                      <td className="py-2.5 font-mono">{formatParaBirimi(toplam, t.para_birimi ?? "TL")}</td>
                       <td className="py-2.5">
                         <TeklifDurumSelect id={t.id} durum={t.durum as TeklifDurum} />
                       </td>

@@ -46,6 +46,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     urunler: { ad: string } | null;
   }[];
 
+  const sablonKullan = teklif.sablon_kullan !== false;
+
   const pdfBytes = await generateTeklifPdf({
     teklifNo: teklif.teklif_no,
     tip: teklif.tip,
@@ -59,6 +61,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     notlar: teklif.notlar,
     iskonto: teklif.iskonto ?? 0,
     kdvOrani: teklif.kdv_orani ?? 20,
+    paraBirimi: teklif.para_birimi ?? "TL",
     firma: {
       ad: firma?.ad ?? "—",
       adres: firma?.adres ?? null,
@@ -74,7 +77,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       vergiNo: sirket?.vergi_no ?? null,
       bankaBilgisi: sirket?.banka_bilgisi ?? null,
       logoUrl: sirket?.logo_url ?? null,
-      ozelSablonUrl: sirket?.ozel_sablon_url ?? null,
+      ozelSablonUrl: sablonKullan ? sirket?.ozel_sablon_url ?? null : null,
     },
     kalemler: rows.map((k) => ({
       urunAd: k.urunler?.ad ?? "—",

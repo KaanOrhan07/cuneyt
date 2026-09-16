@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, Select } from "@/components/ui";
 import { TeklifDurumSelect } from "@/components/teklif-durum-select";
-import { formatTL, formatTarihSaat } from "@/lib/format";
+import { formatParaBirimi, formatTarihSaat } from "@/lib/format";
 import type { Firma, SiparisTip, TeklifDurum } from "@/lib/types";
 
 type Filters = {
@@ -22,7 +22,7 @@ export default async function TekliflerPage({
   let query = supabase
     .from("teklifler")
     .select(
-      "id, tip, durum, tarih_saat, teklif_no, firmalar(id, ad, renk), teklif_kalemleri(adet, birim_fiyat, urunler(ad))",
+      "id, tip, durum, tarih_saat, teklif_no, para_birimi, firmalar(id, ad, renk), teklif_kalemleri(adet, birim_fiyat, urunler(ad))",
     )
     .order("tarih_saat", { ascending: false });
 
@@ -123,7 +123,7 @@ export default async function TekliflerPage({
                     <Badge tip={t.tip as SiparisTip} />
                   </td>
                   <td className="py-2.5">{kalemler.map((k) => k.urunler?.ad).join(", ")}</td>
-                  <td className="py-2.5 font-mono">{formatTL(toplam)}</td>
+                  <td className="py-2.5 font-mono">{formatParaBirimi(toplam, t.para_birimi ?? "TL")}</td>
                   <td className="py-2.5">
                     <TeklifDurumSelect id={t.id} durum={t.durum as TeklifDurum} />
                   </td>

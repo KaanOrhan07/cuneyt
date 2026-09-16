@@ -25,6 +25,8 @@ export async function createTeklif(
   const notlar = (formData.get("notlar") as string) || null;
   const iskonto = Number(formData.get("iskonto") ?? 0);
   const kdv_orani = Number(formData.get("kdv_orani") ?? 20);
+  const para_birimi = (formData.get("para_birimi") as string) || "TL";
+  const sablon_kullan = formData.get("sablon_kullan") === "on";
   const kalemlerRaw = formData.get("kalemler") as string;
 
   let kalemler: TeklifKalemInput[] = [];
@@ -52,6 +54,8 @@ export async function createTeklif(
       notlar,
       iskonto,
       kdv_orani,
+      para_birimi,
+      sablon_kullan,
     })
     .select("id")
     .single();
