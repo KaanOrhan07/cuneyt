@@ -100,7 +100,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
   const sayfaBoyutu = sablonModu ? sayfa.getSize() : { width: A4[0], height: A4[1] };
   const solMargin = 48;
   const sagMargin = sayfaBoyutu.width - 48;
-  const ustBaslikYuksekligi = 190;
+  const ustBaslikYuksekligi = 110;
   let y = sablonModu ? sayfaBoyutu.height - ustBaslikYuksekligi : sayfaBoyutu.height - 48;
 
   // Şablon modunda: kullanıcının yüklediği sayfa boş olmayabilir (kendi eski bir teklifini
