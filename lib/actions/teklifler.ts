@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { SiparisTip, TeklifDurum } from "@/lib/types";
 
@@ -15,6 +16,15 @@ export async function createTeklif(
 
   const firma_id = formData.get("firma_id") as string;
   const tip = formData.get("tip") as SiparisTip;
+  const satici = (formData.get("satici") as string) || null;
+  const termin = (formData.get("termin") as string) || null;
+  const nakliye = (formData.get("nakliye") as string) || null;
+  const teslimat_sekli = (formData.get("teslimat_sekli") as string) || null;
+  const odeme_sartlari = (formData.get("odeme_sartlari") as string) || null;
+  const mesaj = (formData.get("mesaj") as string) || null;
+  const notlar = (formData.get("notlar") as string) || null;
+  const iskonto = Number(formData.get("iskonto") ?? 0);
+  const kdv_orani = Number(formData.get("kdv_orani") ?? 20);
   const kalemlerRaw = formData.get("kalemler") as string;
 
   let kalemler: TeklifKalemInput[] = [];
@@ -30,7 +40,19 @@ export async function createTeklif(
 
   const { data: teklif, error: teklifError } = await supabase
     .from("teklifler")
-    .insert({ firma_id, tip })
+    .insert({
+      firma_id,
+      tip,
+      satici,
+      termin,
+      nakliye,
+      teslimat_sekli,
+      odeme_sartlari,
+      mesaj,
+      notlar,
+      iskonto,
+      kdv_orani,
+    })
     .select("id")
     .single();
 
@@ -49,8 +71,9 @@ export async function createTeklif(
 
   if (kalemError) return { error: kalemError.message };
 
+  revalidatePath("/teklifler");
   revalidatePath(`/firmalar/${firma_id}`);
-  return undefined;
+  redirect(`/teklifler/${teklif.id}`);
 }
 
 export async function updateTeklifDurum(id: string, durum: TeklifDurum) {
@@ -62,6 +85,8 @@ export async function updateTeklifDurum(id: string, durum: TeklifDurum) {
     .select("firma_id")
     .single();
   if (error) throw new Error(error.message);
+  revalidatePath("/teklifler");
+  revalidatePath(`/teklifler/${id}`);
   if (data?.firma_id) revalidatePath(`/firmalar/${data.firma_id}`);
 }
 
@@ -74,5 +99,6 @@ export async function deleteTeklif(id: string) {
     .select("firma_id")
     .single();
   if (error) throw new Error(error.message);
+  revalidatePath("/teklifler");
   if (data?.firma_id) revalidatePath(`/firmalar/${data.firma_id}`);
 }

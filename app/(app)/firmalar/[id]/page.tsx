@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Panel } from "@/components/ui";
+import { Button, Panel } from "@/components/ui";
 import { DurumSelect } from "@/components/durum-select";
 import { SiparisDeleteButton } from "@/components/siparis-delete-button";
-import { TeklifForm } from "@/components/teklif-form";
 import { TeklifDurumSelect } from "@/components/teklif-durum-select";
 import { CariHesapPanel } from "@/components/cari/cari-hesap-panel";
+import { FirmaIletisimPanel } from "@/components/firma-iletisim-panel";
 import { formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
-import type { CariHareket, CariOdeme, SiparisDurum, TeklifDurum, Urun } from "@/lib/types";
+import type { CariHareket, CariOdeme, SiparisDurum, TeklifDurum } from "@/lib/types";
 
 type Bolum = "siparisler" | "teklifler" | "cari";
 
@@ -30,7 +30,6 @@ export default async function FirmaDetailPage({
   const [
     { data: siparisler, error: siparisHata },
     { data: teklifler, error: teklifHata },
-    { data: urunler },
     { data: hareketler, error: cariHata },
     { data: odemeler },
   ] = await Promise.all([
@@ -47,7 +46,6 @@ export default async function FirmaDetailPage({
         .select("id, tip, durum, tarih_saat, teklif_no, teklif_kalemleri(adet, birim_fiyat, urunler(ad))")
         .eq("firma_id", id)
         .order("tarih_saat", { ascending: false }),
-      supabase.from("urunler").select("*").is("deleted_at", null).order("ad"),
       supabase
         .from("cari_hareketler")
         .select("*")
@@ -91,6 +89,16 @@ export default async function FirmaDetailPage({
             )}
           </div>
         </div>
+      </div>
+
+      <div className="mb-5">
+        <FirmaIletisimPanel
+          firmaId={id}
+          adres={firma.adres}
+          telefon={firma.telefon}
+          eposta={firma.eposta}
+          vergiNo={firma.vergi_no}
+        />
       </div>
 
       <div className="mb-5 flex gap-1 border-b border-border">
@@ -206,7 +214,9 @@ export default async function FirmaDetailPage({
       {bolumKey === "teklifler" && (
         <div>
           <div className="mb-4">
-            <TeklifForm firmaId={id} urunler={(urunler as Urun[]) ?? []} />
+            <Link href={`/teklifler/yeni?firma_id=${id}`}>
+              <Button>+ Yeni Teklif</Button>
+            </Link>
           </div>
           <Panel>
             <table className="w-full text-[13px]">
@@ -230,7 +240,11 @@ export default async function FirmaDetailPage({
                   const toplam = kalemler.reduce((sum, k) => sum + k.adet * k.birim_fiyat, 0);
                   return (
                     <tr key={t.id} className="border-b border-border last:border-0">
-                      <td className="py-2.5 font-mono font-medium">{t.teklif_no || "—"}</td>
+                      <td className="py-2.5 font-mono font-medium">
+                        <Link href={`/teklifler/${t.id}`} className="text-green hover:underline">
+                          {t.teklif_no || "Detay →"}
+                        </Link>
+                      </td>
                       <td className="py-2.5 font-mono">{formatTarihSaat(t.tarih_saat)}</td>
                       <td className="py-2.5">{t.tip === "alis" ? "Alış" : "Satış"}</td>
                       <td className="py-2.5">{kalemler.map((k) => k.urunler?.ad).join(", ")}</td>

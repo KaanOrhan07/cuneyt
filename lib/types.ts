@@ -4,6 +4,10 @@ export type Firma = {
   renk: string;
   is_tedarikci: boolean;
   is_musteri: boolean;
+  adres: string | null;
+  telefon: string | null;
+  eposta: string | null;
+  vergi_no: string | null;
   deleted_at: string | null;
   created_at: string;
 };
@@ -72,6 +76,15 @@ export type Teklif = {
   durum: TeklifDurum;
   tarih_saat: string;
   teklif_no: string | null;
+  satici: string | null;
+  termin: string | null;
+  nakliye: string | null;
+  teslimat_sekli: string | null;
+  odeme_sartlari: string | null;
+  mesaj: string | null;
+  notlar: string | null;
+  iskonto: number;
+  kdv_orani: number;
   created_at: string;
 };
 
@@ -106,5 +119,27 @@ export type CariOdeme = {
   cari_hareket_id: string;
   tarih: string;
   tutar: number;
+  created_at: string;
+};
+
+export type SirketProfili = {
+  id: true;
+  sirket_adi: string | null;
+  adres: string | null;
+  telefon: string | null;
+  eposta: string | null;
+  vergi_no: string | null;
+  banka_bilgisi: string | null;
+  logo_url: string | null;
+  ozel_sablon_url: string | null;
+  varsayilan_notlar: string | null;
+  updated_at: string;
+};
+
+export type EkipUyesi = {
+  id: string;
+  auth_user_id: string;
+  ad_soyad: string;
+  eposta: string;
   created_at: string;
 };

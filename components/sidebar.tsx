@@ -9,12 +9,14 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/firmalar", label: "Firmalar" },
   { href: "/siparisler", label: "Siparişler" },
+  { href: "/teklifler", label: "Teklifler" },
   { href: "/teslimatlar", label: "Teslimatlar" },
   { href: "/urunler", label: "Ürünler / Stok" },
   { href: "/tablolar", label: "Tablolar" },
   { href: "/ditables", label: "DiTables" },
   { href: "/stok-hareketleri", label: "Stok Hareketleri" },
   { href: "/raporlar", label: "Raporlar" },
+  { href: "/biz", label: "Biz" },
 ];
 
 export function Sidebar({

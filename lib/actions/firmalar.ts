@@ -72,7 +72,7 @@ export async function bulkImportFirmalar(rows: FirmaImportSatiri[]) {
 
 export async function updateFirmaField(
   id: string,
-  field: "ad" | "renk" | "is_tedarikci" | "is_musteri",
+  field: "ad" | "renk" | "is_tedarikci" | "is_musteri" | "adres" | "telefon" | "eposta" | "vergi_no",
   value: string | boolean,
 ) {
   const supabase = await createClient();
@@ -83,5 +83,6 @@ export async function updateFirmaField(
 
   if (error) throw new Error(error.message);
   revalidatePath("/firmalar");
+  revalidatePath(`/firmalar/${id}`);
   revalidatePath("/tablolar");
 }
