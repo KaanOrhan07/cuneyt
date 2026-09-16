@@ -142,9 +142,10 @@ export function SirketProfiliForm({ profil }: { profil: SirketProfili | null }) 
 
       <Panel title="Kendi PDF Şablonunuz (opsiyonel)">
         <p className="mb-3 text-[12.5px] text-text-dim">
-          Şirketinizin antetli kağıdını (logo/başlık zaten üzerinde basılı, boş bir PDF sayfası) yüklerseniz,
-          teklif PDF&apos;i bu sayfanın üzerine basılır — üst kısım (yaklaşık 5 cm) boş bırakılırsa en iyi
-          sonucu alırsınız. Yüklemezseniz DiTrack&apos;in kendi tasarımı (üstteki logo/bilgiler ile) kullanılır.
+          Elinizdeki herhangi bir teklif/fatura PDF&apos;ini (dolu olsa bile) yükleyebilirsiniz — üst kısımdaki
+          logo/başlık alanı (yaklaşık 6 cm) olduğu gibi korunur, altındaki her şeyi biz otomatik olarak
+          temizleyip yeni teklif içeriğini oraya basarız. Elle silme/boşaltma yapmanıza gerek yok. Yüklemezseniz
+          DiTrack&apos;in kendi tasarımı (üstteki logo/bilgiler ile) kullanılır.
         </p>
         <div className="flex items-center gap-4">
           {profil?.ozel_sablon_url ? (

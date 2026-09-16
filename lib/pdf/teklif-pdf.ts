@@ -97,9 +97,24 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
   const font = await pdf.embedFont(fontBytes, { subset: true });
   const fontBold = await pdf.embedFont(fontBoldBytes, { subset: true });
 
+  const sayfaBoyutu = sablonModu ? sayfa.getSize() : { width: A4[0], height: A4[1] };
   const solMargin = 48;
-  const sagMargin = A4[0] - 48;
-  let y = sablonModu ? A4[1] - 200 : A4[1] - 48;
+  const sagMargin = sayfaBoyutu.width - 48;
+  const ustBaslikYuksekligi = 190;
+  let y = sablonModu ? sayfaBoyutu.height - ustBaslikYuksekligi : sayfaBoyutu.height - 48;
+
+  // Şablon modunda: kullanıcının yüklediği sayfa boş olmayabilir (kendi eski bir teklifini
+  // yüklemiş olabilir) — üst kısmı (antet/logo) olduğu gibi bırakıp, altındaki her şeyi beyazla
+  // kapatarak temiz bir yüzey oluşturuyoruz, böylece kullanıcı şablonu elle boşaltmak zorunda kalmıyor.
+  if (sablonModu) {
+    sayfa.drawRectangle({
+      x: 0,
+      y: 0,
+      width: sayfaBoyutu.width,
+      height: sayfaBoyutu.height - ustBaslikYuksekligi + 12,
+      color: rgb(1, 1, 1),
+    });
+  }
 
   function yaz(
     metin: string,
