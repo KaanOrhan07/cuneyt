@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateSiparisPdf } from "@/lib/pdf/siparis-pdf";
-import { DURUM_LABEL } from "@/lib/types";
-import type { SiparisDurum } from "@/lib/types";
+import { dilCoz } from "@/lib/pdf/i18n";
 
 export const runtime = "nodejs";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const dil = dilCoz(new URL(request.url).searchParams.get("dil"));
   const supabase = await createClient();
 
   const {
@@ -43,10 +43,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const pdfBytes = await generateSiparisPdf({
     siparisNo: siparis.siparis_no,
     tip: siparis.tip,
-    durum: DURUM_LABEL[siparis.durum as SiparisDurum],
+    dil,
+    durum: siparis.durum,
     tarih: siparis.tarih_saat,
     sonTeslimTarihi: siparis.son_teslim_tarihi,
     kdvOrani: siparis.kdv_orani,
+    kargoBedeli: siparis.kargo_bedeli ?? 0,
     firmaAd: firma?.ad ?? "—",
     kalemler: rows.map((k) => ({
       urunAd: k.urunler?.ad ?? "—",
@@ -56,7 +58,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     })),
   });
 
-  const dosyaAdi = siparis.siparis_no ? `siparis-${siparis.siparis_no}.pdf` : `siparis-${id.slice(0, 8)}.pdf`;
+  const onEk = dil === "en" ? "order" : "siparis";
+  const dosyaAdi = siparis.siparis_no ? `${onEk}-${siparis.siparis_no}.pdf` : `${onEk}-${id.slice(0, 8)}.pdf`;
 
   return new NextResponse(Buffer.from(pdfBytes), {
     headers: {

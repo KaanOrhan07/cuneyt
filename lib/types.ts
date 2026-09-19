@@ -36,6 +36,7 @@ export type Siparis = {
   son_teslim_tarihi: string | null;
   siparis_no: string | null;
   kdv_orani: number;
+  kargo_bedeli: number;
   created_at: string;
 };
 
@@ -87,6 +88,7 @@ export type Teklif = {
   kdv_orani: number;
   para_birimi: string;
   sablon_kullan: boolean;
+  kargo_bedeli: number;
   created_at: string;
 };
 
@@ -105,6 +107,8 @@ export const TEKLIF_DURUM_LABEL: Record<TeklifDurum, string> = {
   reddedildi: "Reddedildi",
 };
 
+export type CariYon = "alacak" | "verecek";
+
 export type CariHareket = {
   id: string;
   firma_id: string;
@@ -113,6 +117,8 @@ export type CariHareket = {
   tutar: number;
   vade_tarihi: string | null;
   aciklama: string | null;
+  yon: CariYon;
+  para_birimi: string;
   created_at: string;
 };
 
@@ -134,6 +140,7 @@ export type SirketProfili = {
   banka_bilgisi: string | null;
   logo_url: string | null;
   ozel_sablon_url: string | null;
+  alis_teklif_sablon_url: string | null;
   varsayilan_notlar: string | null;
   updated_at: string;
 };
@@ -144,4 +151,66 @@ export type EkipUyesi = {
   ad_soyad: string;
   eposta: string;
   created_at: string;
+};
+
+export type Gider = {
+  id: string;
+  tarih: string;
+  kategori: string | null;
+  aciklama: string;
+  tutar: number;
+  para_birimi: string;
+  created_at: string;
+};
+
+export type SatinAlmaDurum = "taslak" | "gonderildi" | "teslim_alindi" | "iptal_edildi";
+
+export const SATIN_ALMA_DURUM_LABEL: Record<SatinAlmaDurum, string> = {
+  taslak: "Taslak",
+  gonderildi: "Gönderildi",
+  teslim_alindi: "Teslim alındı",
+  iptal_edildi: "İptal edildi",
+};
+
+export type SatinAlma = {
+  id: string;
+  firma_id: string;
+  po_no: string | null;
+  tarih: string;
+  teklif_ref: string | null;
+  iletisim: string | null;
+  teslimat: string | null;
+  nakliye: string | null;
+  termin: string | null;
+  odeme_sartlari: string | null;
+  mesaj: string | null;
+  notlar: string | null;
+  para_birimi: string;
+  kdv_orani: number;
+  kargo_bedeli: number;
+  kargo_notu: string | null;
+  durum: SatinAlmaDurum;
+  created_at: string;
+};
+
+export type SatinAlmaKalemi = {
+  id: string;
+  satin_alma_id: string;
+  sira: number;
+  adet: number;
+  aciklama: string;
+  termin: string | null;
+  birim_fiyat: number;
+};
+
+export type IslemKaydi = {
+  id: string;
+  created_at: string;
+  kullanici_id: string | null;
+  kullanici_ad: string | null;
+  modul: string;
+  islem: string;
+  kayit_id: string | null;
+  baslik: string | null;
+  detay: Record<string, unknown> | null;
 };

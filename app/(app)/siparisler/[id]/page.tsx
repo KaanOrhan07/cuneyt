@@ -34,8 +34,9 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
   }[];
 
   const araToplam = rows.reduce((s, k) => s + k.adet * k.birim_fiyat, 0);
-  const kdvTutari = araToplam * (siparis.kdv_orani / 100);
-  const genelToplam = araToplam + kdvTutari;
+  const kargoBedeli = siparis.kargo_bedeli ?? 0;
+  const kdvTutari = (araToplam + kargoBedeli) * (siparis.kdv_orani / 100);
+  const genelToplam = araToplam + kargoBedeli + kdvTutari;
 
   return (
     <div>
@@ -57,8 +58,11 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
         </div>
         <div className="flex items-center gap-3">
           <DurumSelect id={siparis.id} durum={siparis.durum as SiparisDurum} />
-          <a href={`/api/siparisler/${id}/pdf`} target="_blank" rel="noopener noreferrer">
-            <Button variant="secondary">PDF İndir</Button>
+          <a href={`/api/siparisler/${id}/pdf?dil=tr`} target="_blank" rel="noopener noreferrer">
+            <Button variant="secondary">PDF İndir (TR)</Button>
+          </a>
+          <a href={`/api/siparisler/${id}/pdf?dil=en`} target="_blank" rel="noopener noreferrer">
+            <Button variant="secondary">PDF (EN)</Button>
           </a>
         </div>
       </div>
@@ -117,6 +121,12 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
             <span>Ara Toplam</span>
             <span className="font-mono">{formatTL(araToplam)}</span>
           </div>
+          {kargoBedeli > 0 && (
+            <div className="flex w-48 justify-between text-text-dim">
+              <span>Kargo</span>
+              <span className="font-mono">{formatTL(kargoBedeli)}</span>
+            </div>
+          )}
           <div className="flex w-48 justify-between text-text-dim">
             <span>KDV (%{siparis.kdv_orani})</span>
             <span className="font-mono">{formatTL(kdvTutari)}</span>

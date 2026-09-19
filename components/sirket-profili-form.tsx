@@ -7,6 +7,7 @@ import {
   removeLogo,
   uploadOzelSablon,
   removeOzelSablon,
+  type SablonTuru,
 } from "@/lib/actions/sirket";
 import { Button, Input, Label, Panel, Textarea } from "@/components/ui";
 import type { SirketProfili } from "@/lib/types";
@@ -16,9 +17,7 @@ export function SirketProfiliForm({ profil }: { profil: SirketProfili | null }) 
   const [kaydedildi, setKaydedildi] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const sablonInputRef = useRef<HTMLInputElement>(null);
   const [logoYukleniyor, setLogoYukleniyor] = useState(false);
-  const [sablonYukleniyor, setSablonYukleniyor] = useState(false);
 
   return (
     <div className="flex flex-col gap-5">
@@ -140,65 +139,104 @@ export function SirketProfiliForm({ profil }: { profil: SirketProfili | null }) 
         </div>
       </Panel>
 
-      <Panel title="Kendi PDF Şablonunuz (opsiyonel)">
-        <p className="mb-3 text-[12.5px] text-text-dim">
-          Elinizdeki herhangi bir teklif/fatura PDF&apos;ini (dolu olsa bile) yükleyebilirsiniz — üst kısımdaki
-          logo/başlık alanı (yaklaşık 4 cm) olduğu gibi korunur, altındaki her şeyi biz otomatik olarak
-          temizleyip yeni teklif içeriğini oraya basarız. Elle silme/boşaltma yapmanıza gerek yok — logonuzun
-          hemen altındaki eski bilgiler (eski teklif no, alıcı, kalemler vb.) de dahil, temizlenir. Yüklemezseniz
-          DiTrack&apos;in kendi tasarımı (üstteki logo/bilgiler ile) kullanılır.
-        </p>
-        <div className="flex items-center gap-4">
-          {profil?.ozel_sablon_url ? (
-            <a
-              href={profil.ozel_sablon_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[12.5px] font-medium text-green hover:underline"
-            >
-              Yüklü şablonu görüntüle
-            </a>
-          ) : (
-            <span className="text-[12px] text-text-dim">Şablon yüklenmedi</span>
-          )}
-        </div>
-        <div className="mt-2 flex flex-col gap-2">
-          <input
-            ref={sablonInputRef}
-            type="file"
-            accept="application/pdf"
-            className="text-[12px]"
-            onChange={() => {
-              const file = sablonInputRef.current?.files?.[0];
-              if (!file) return;
-              const fd = new FormData();
-              fd.set("sablon", file);
-              setSablonYukleniyor(true);
-              setHata(null);
-              startTransition(async () => {
-                try {
-                  await uploadOzelSablon(fd);
-                } catch (err) {
-                  setHata(err instanceof Error ? err.message : "Şablon yüklenemedi.");
-                } finally {
-                  setSablonYukleniyor(false);
-                  if (sablonInputRef.current) sablonInputRef.current.value = "";
-                }
-              });
-            }}
-          />
-          {profil?.ozel_sablon_url && (
-            <button
-              type="button"
-              className="self-start text-[12px] text-text-dim hover:text-orange"
-              onClick={() => startTransition(() => removeOzelSablon())}
-            >
-              Şablonu kaldır (DiTrack tasarımına dön)
-            </button>
-          )}
-          {sablonYukleniyor && <span className="text-[11.5px] text-text-dim">Yükleniyor...</span>}
-        </div>
-      </Panel>
+      <SablonBolumu
+        tur="satis"
+        baslik="Satış Teklifi Şablonu (opsiyonel)"
+        url={profil?.ozel_sablon_url ?? null}
+        aciklama={
+          <>
+            Elinizdeki herhangi bir teklif/fatura PDF&apos;ini (dolu olsa bile) yükleyebilirsiniz — üst kısımdaki
+            logo/başlık alanı (yaklaşık 4 cm) olduğu gibi korunur, altındaki her şeyi biz otomatik olarak
+            temizleyip yeni teklif içeriğini oraya basarız. Elle silme/boşaltma yapmanıza gerek yok. Yüklemezseniz
+            DiTrack&apos;in kendi tasarımı kullanılır.
+          </>
+        }
+      />
+      <SablonBolumu
+        tur="alis"
+        baslik="Alış Teklifi Şablonu (opsiyonel)"
+        url={profil?.alis_teklif_sablon_url ?? null}
+        aciklama={
+          <>
+            Alış teklifleriniz için ayrı bir şablon yükleyebilirsiniz; aynı şekilde üst antet alanı korunur,
+            altı otomatik temizlenir. Yüklemezseniz DiTrack&apos;in kendi tasarımı kullanılır.
+          </>
+        }
+      />
     </div>
+  );
+}
+
+function SablonBolumu({
+  tur,
+  baslik,
+  url,
+  aciklama,
+}: {
+  tur: SablonTuru;
+  baslik: string;
+  url: string | null;
+  aciklama: React.ReactNode;
+}) {
+  const [, startTransition] = useTransition();
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const [hata, setHata] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <Panel title={baslik}>
+      <p className="mb-3 text-[12.5px] text-text-dim">{aciklama}</p>
+      <div className="flex items-center gap-4">
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[12.5px] font-medium text-green hover:underline"
+          >
+            Yüklü şablonu görüntüle
+          </a>
+        ) : (
+          <span className="text-[12px] text-text-dim">Şablon yüklenmedi</span>
+        )}
+      </div>
+      <div className="mt-2 flex flex-col gap-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="application/pdf"
+          className="text-[12px]"
+          onChange={() => {
+            const file = inputRef.current?.files?.[0];
+            if (!file) return;
+            const fd = new FormData();
+            fd.set("sablon", file);
+            setYukleniyor(true);
+            setHata(null);
+            startTransition(async () => {
+              try {
+                await uploadOzelSablon(tur, fd);
+              } catch (err) {
+                setHata(err instanceof Error ? err.message : "Şablon yüklenemedi.");
+              } finally {
+                setYukleniyor(false);
+                if (inputRef.current) inputRef.current.value = "";
+              }
+            });
+          }}
+        />
+        {url && (
+          <button
+            type="button"
+            className="self-start text-[12px] text-text-dim hover:text-orange"
+            onClick={() => startTransition(() => removeOzelSablon(tur))}
+          >
+            Şablonu kaldır (DiTrack tasarımına dön)
+          </button>
+        )}
+        {yukleniyor && <span className="text-[11.5px] text-text-dim">Yükleniyor...</span>}
+        {hata && <p className="rounded-lg bg-orange-soft px-3 py-2 text-[12.5px] text-orange">{hata}</p>}
+      </div>
+    </Panel>
   );
 }

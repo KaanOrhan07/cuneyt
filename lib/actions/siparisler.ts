@@ -20,6 +20,7 @@ export async function createSiparis(
   const son_teslim_tarihi = (formData.get("son_teslim_tarihi") as string) || null;
   const siparis_no = (formData.get("siparis_no") as string) || null;
   const kdv_orani = Number(formData.get("kdv_orani") ?? 20);
+  const kargo_bedeli = Number(formData.get("kargo_bedeli") ?? 0) || 0;
   const kalemlerRaw = formData.get("kalemler") as string;
 
   let kalemler: KalemInput[] = [];
@@ -35,7 +36,15 @@ export async function createSiparis(
 
   const { data: siparis, error: siparisError } = await supabase
     .from("siparisler")
-    .insert({ firma_id, tip, durum, son_teslim_tarihi, siparis_no, kdv_orani })
+    .insert({
+      firma_id,
+      tip,
+      durum,
+      son_teslim_tarihi,
+      siparis_no,
+      kdv_orani,
+      ...(kargo_bedeli > 0 ? { kargo_bedeli } : {}),
+    })
     .select("id")
     .single();
 

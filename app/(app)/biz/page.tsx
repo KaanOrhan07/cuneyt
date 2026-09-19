@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { SirketProfiliForm } from "@/components/sirket-profili-form";
 import { EkipPanel } from "@/components/ekip-panel";
+import { YedekPanel } from "@/components/yedek-panel";
 import type { EkipUyesi, SirketProfili } from "@/lib/types";
 
 export default async function BizPage() {
@@ -34,6 +35,7 @@ export default async function BizPage() {
       <div className="flex flex-col gap-5">
         <SirketProfiliForm profil={sirket as SirketProfili | null} />
         <EkipPanel ekip={(ekip as EkipUyesi[]) ?? []} mevcutKullaniciId={user?.id ?? ""} />
+        <YedekPanel />
       </div>
     </div>
   );

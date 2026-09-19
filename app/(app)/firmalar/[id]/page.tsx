@@ -216,9 +216,14 @@ export default async function FirmaDetailPage({
       {bolumKey === "teklifler" && (
         <div>
           <div className="mb-4">
-            <Link href={`/teklifler/yeni?firma_id=${id}`}>
-              <Button>+ Yeni Teklif</Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link href={`/teklifler/yeni?firma_id=${id}`}>
+                <Button>+ Satış Teklifi</Button>
+              </Link>
+              <Link href={`/alis-teklifleri/yeni?firma_id=${id}`}>
+                <Button variant="secondary">+ Alış Teklifi</Button>
+              </Link>
+            </div>
           </div>
           <Panel>
             <table className="w-full text-[13px]">
@@ -243,7 +248,10 @@ export default async function FirmaDetailPage({
                   return (
                     <tr key={t.id} className="border-b border-border last:border-0">
                       <td className="py-2.5 font-mono font-medium">
-                        <Link href={`/teklifler/${t.id}`} className="text-green hover:underline">
+                        <Link
+                          href={`${t.tip === "alis" ? "/alis-teklifleri" : "/teklifler"}/${t.id}`}
+                          className="text-green hover:underline"
+                        >
                           {t.teklif_no || "Detay →"}
                         </Link>
                       </td>

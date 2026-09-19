@@ -2,6 +2,7 @@ import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { SIPARIS_METIN, paraFormat, tarihFormat, yuzdeFormat, type Dil } from "./i18n";
 
 const YESIL = rgb(0.157, 0.412, 0.294); // #28694B
 const GRI = rgb(0.431, 0.431, 0.451); // #6E6E73
@@ -12,21 +13,21 @@ const UST_BASLANGIC = 800;
 const ALT_SINIR = 90;
 
 export type SiparisPdfData = {
+  dil: Dil;
   siparisNo: string | null;
   tip: "alis" | "satis";
   durum: string;
   tarih: string;
   sonTeslimTarihi: string | null;
   kdvOrani: number;
+  kargoBedeli: number;
   firmaAd: string;
   kalemler: { urunAd: string; adet: number; teslimEdilenAdet: number; birimFiyat: number }[];
 };
 
-function tl(n: number) {
-  return `${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`;
-}
-
 export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Array> {
+  const M = SIPARIS_METIN[data.dil];
+  const tl = (n: number) => paraFormat(n, "TL", data.dil);
   const [fontBytes, fontBoldBytes] = await Promise.all([
     fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Regular.ttf")),
     fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Bold.ttf")),
@@ -93,45 +94,45 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
 
   // Başlık
   yaz("DiTrack", solMargin, y, { boyut: 20, renk: YESIL, kalin: true });
-  yaz(data.tip === "alis" ? "ALIŞ SİPARİŞ FORMU" : "SATIŞ SİPARİŞ FORMU", sagMargin, y, {
+  yaz(data.tip === "alis" ? M.baslikAlis : M.baslikSatis, sagMargin, y, {
     boyut: 14,
     hizalama: "sag",
     kalin: true,
   });
   y -= 18;
-  yaz("Sipariş Takip", solMargin, y, { boyut: 10, renk: GRI });
+  yaz(M.altBaslik, solMargin, y, { boyut: 10, renk: GRI });
   if (data.siparisNo) {
-    yaz(`Sipariş No: ${data.siparisNo}`, sagMargin, y, { boyut: 10, renk: GRI, hizalama: "sag" });
+    yaz(`${M.siparisNo}: ${data.siparisNo}`, sagMargin, y, { boyut: 10, renk: GRI, hizalama: "sag" });
   }
   y -= 30;
   cizgi(y);
   y -= 24;
 
   // Bilgi bloğu
-  yaz("Firma", solMargin, y, { boyut: 9, renk: GRI });
-  yaz("Tarih", solMargin + 220, y, { boyut: 9, renk: GRI });
-  yaz("Son Teslim Tarihi", solMargin + 360, y, { boyut: 9, renk: GRI });
+  yaz(M.firma, solMargin, y, { boyut: 9, renk: GRI });
+  yaz(M.tarih, solMargin + 220, y, { boyut: 9, renk: GRI });
+  yaz(M.sonTeslim, solMargin + 360, y, { boyut: 9, renk: GRI });
   y -= 16;
   yaz(data.firmaAd, solMargin, y, { boyut: 11, kalin: true });
-  yaz(new Date(data.tarih).toLocaleDateString("tr-TR"), solMargin + 220, y, { boyut: 11 });
+  yaz(tarihFormat(data.tarih, data.dil), solMargin + 220, y, { boyut: 11 });
   yaz(
-    data.sonTeslimTarihi ? new Date(data.sonTeslimTarihi).toLocaleDateString("tr-TR") : "—",
+    data.sonTeslimTarihi ? tarihFormat(data.sonTeslimTarihi, data.dil) : "—",
     solMargin + 360,
     y,
     { boyut: 11 },
   );
   y -= 20;
-  yaz("Durum", solMargin, y, { boyut: 9, renk: GRI });
+  yaz(M.durum, solMargin, y, { boyut: 9, renk: GRI });
   y -= 16;
-  yaz(data.durum, solMargin, y, { boyut: 11 });
+  yaz(M.durumlar[data.durum] ?? data.durum, solMargin, y, { boyut: 11 });
   y -= 30;
 
   const sutunlar = [
-    { baslik: "Ürün", x: solMargin, hizalama: "sol" as const },
-    { baslik: "İstenen", x: solMargin + 240, hizalama: "sag" as const },
-    { baslik: "Teslim Edilen", x: solMargin + 320, hizalama: "sag" as const },
-    { baslik: "Birim Fiyat", x: solMargin + 420, hizalama: "sag" as const },
-    { baslik: "Tutar", x: sagMargin, hizalama: "sag" as const },
+    { baslik: M.urun, x: solMargin, hizalama: "sol" as const },
+    { baslik: M.istenen, x: solMargin + 240, hizalama: "sag" as const },
+    { baslik: M.teslimEdilen, x: solMargin + 320, hizalama: "sag" as const },
+    { baslik: M.birimFiyat, x: solMargin + 420, hizalama: "sag" as const },
+    { baslik: M.tutar, x: sagMargin, hizalama: "sag" as const },
   ];
 
   tabloBasligiCiz();
@@ -157,17 +158,23 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
   cizgi(y);
   y -= 24;
 
-  const kdvTutari = araToplam * (data.kdvOrani / 100);
-  const genelToplam = araToplam + kdvTutari;
+  const matrah = araToplam + data.kargoBedeli;
+  const kdvTutari = matrah * (data.kdvOrani / 100);
+  const genelToplam = matrah + kdvTutari;
 
   const ozetX = solMargin + 320;
-  yaz("Ara Toplam", ozetX, y, { boyut: 10, renk: GRI });
+  yaz(M.araToplam, ozetX, y, { boyut: 10, renk: GRI });
   yaz(tl(araToplam), sagMargin, y, { boyut: 10, hizalama: "sag" });
   y -= 16;
-  yaz(`KDV (%${data.kdvOrani})`, ozetX, y, { boyut: 10, renk: GRI });
+  if (data.kargoBedeli > 0) {
+    yaz(M.kargo, ozetX, y, { boyut: 10, renk: GRI });
+    yaz(tl(data.kargoBedeli), sagMargin, y, { boyut: 10, hizalama: "sag" });
+    y -= 16;
+  }
+  yaz(`${M.kdv} (${yuzdeFormat(data.kdvOrani, data.dil)})`, ozetX, y, { boyut: 10, renk: GRI });
   yaz(tl(kdvTutari), sagMargin, y, { boyut: 10, hizalama: "sag" });
   y -= 18;
-  yaz("Genel Toplam", ozetX, y, { boyut: 12, renk: YESIL, kalin: true });
+  yaz(M.genelToplam, ozetX, y, { boyut: 12, renk: YESIL, kalin: true });
   yaz(tl(genelToplam), sagMargin, y, { boyut: 12, renk: YESIL, hizalama: "sag", kalin: true });
 
   sayfa.drawText("Created by Digio Medya ve Yazılım", {

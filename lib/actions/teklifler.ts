@@ -26,6 +26,7 @@ export async function createTeklif(
   const iskonto = Number(formData.get("iskonto") ?? 0);
   const kdv_orani = Number(formData.get("kdv_orani") ?? 20);
   const para_birimi = (formData.get("para_birimi") as string) || "TL";
+  const kargo_bedeli = Number(formData.get("kargo_bedeli") ?? 0) || 0;
   const sablon_kullan = formData.get("sablon_kullan") === "on";
   const kalemlerRaw = formData.get("kalemler") as string;
 
@@ -56,6 +57,7 @@ export async function createTeklif(
       kdv_orani,
       para_birimi,
       sablon_kullan,
+      ...(kargo_bedeli > 0 ? { kargo_bedeli } : {}),
     })
     .select("id")
     .single();
@@ -76,8 +78,9 @@ export async function createTeklif(
   if (kalemError) return { error: kalemError.message };
 
   revalidatePath("/teklifler");
+  revalidatePath("/alis-teklifleri");
   revalidatePath(`/firmalar/${firma_id}`);
-  redirect(`/teklifler/${teklif.id}`);
+  redirect(tip === "alis" ? `/alis-teklifleri/${teklif.id}` : `/teklifler/${teklif.id}`);
 }
 
 export async function updateTeklifDurum(id: string, durum: TeklifDurum) {
@@ -90,7 +93,9 @@ export async function updateTeklifDurum(id: string, durum: TeklifDurum) {
     .single();
   if (error) throw new Error(error.message);
   revalidatePath("/teklifler");
+  revalidatePath("/alis-teklifleri");
   revalidatePath(`/teklifler/${id}`);
+  revalidatePath(`/alis-teklifleri/${id}`);
   if (data?.firma_id) revalidatePath(`/firmalar/${data.firma_id}`);
 }
 
@@ -104,5 +109,6 @@ export async function deleteTeklif(id: string) {
     .single();
   if (error) throw new Error(error.message);
   revalidatePath("/teklifler");
+  revalidatePath("/alis-teklifleri");
   if (data?.firma_id) revalidatePath(`/firmalar/${data.firma_id}`);
 }

@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateTeklifPdf } from "@/lib/pdf/teklif-pdf";
+import { dilCoz } from "@/lib/pdf/i18n";
 
 export const runtime = "nodejs";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const dil = dilCoz(new URL(request.url).searchParams.get("dil"));
   const supabase = await createClient();
 
   const {
@@ -47,8 +49,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }[];
 
   const sablonKullan = teklif.sablon_kullan !== false;
+  const turSablonu =
+    teklif.tip === "alis" ? sirket?.alis_teklif_sablon_url ?? null : sirket?.ozel_sablon_url ?? null;
 
   const pdfBytes = await generateTeklifPdf({
+    dil,
     teklifNo: teklif.teklif_no,
     tip: teklif.tip,
     tarih: teklif.tarih_saat,
@@ -62,6 +67,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     iskonto: teklif.iskonto ?? 0,
     kdvOrani: teklif.kdv_orani ?? 20,
     paraBirimi: teklif.para_birimi ?? "TL",
+    kargoBedeli: teklif.kargo_bedeli ?? 0,
     firma: {
       ad: firma?.ad ?? "—",
       adres: firma?.adres ?? null,
@@ -77,7 +83,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       vergiNo: sirket?.vergi_no ?? null,
       bankaBilgisi: sirket?.banka_bilgisi ?? null,
       logoUrl: sirket?.logo_url ?? null,
-      ozelSablonUrl: sablonKullan ? sirket?.ozel_sablon_url ?? null : null,
+      ozelSablonUrl: sablonKullan ? turSablonu : null,
     },
     kalemler: rows.map((k) => ({
       urunAd: k.urunler?.ad ?? "—",
@@ -86,7 +92,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     })),
   });
 
-  const dosyaAdi = teklif.teklif_no ? `teklif-${teklif.teklif_no}.pdf` : `teklif-${id.slice(0, 8)}.pdf`;
+  const onEk = dil === "en" ? "quote" : "teklif";
+  const dosyaAdi = teklif.teklif_no ? `${onEk}-${teklif.teklif_no}.pdf` : `${onEk}-${id.slice(0, 8)}.pdf`;
 
   return new NextResponse(Buffer.from(pdfBytes), {
     headers: {

@@ -1,17 +1,11 @@
-import { PDFDocument, rgb, type PDFPage, type PDFFont } from "pdf-lib";
-import fontkit from "@pdf-lib/fontkit";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { paraBirimiSembol } from "@/lib/format";
+import { type PDFPage } from "pdf-lib";
+import { A4, RENK, UST_BASLIK_YUKSEKLIGI, belgeAc, gorseliGom, type Renk } from "./ortak";
+import { TEKLIF_METIN, paraFormat, tarihFormat, yuzdeFormat, type Dil } from "./i18n";
 
-const YESIL = rgb(0.157, 0.412, 0.294); // #28694B
-const GRI = rgb(0.431, 0.431, 0.451); // #6E6E73
-const SIYAH = rgb(0.106, 0.11, 0.094); // #1B1C18
-const AC_GRI = rgb(0.906, 0.906, 0.906);
-const A4 = [595, 842] as const;
 const ALT_SINIR = 90;
 
 export type TeklifPdfData = {
+  dil: Dil;
   teklifNo: string | null;
   tip: "alis" | "satis";
   tarih: string;
@@ -24,6 +18,7 @@ export type TeklifPdfData = {
   notlar: string | null;
   iskonto: number;
   kdvOrani: number;
+  kargoBedeli: number;
   paraBirimi: string;
   firma: {
     ad: string;
@@ -40,103 +35,35 @@ export type TeklifPdfData = {
     vergiNo: string | null;
     bankaBilgisi: string | null;
     logoUrl: string | null;
+    /** Bu teklif türü (satış/alış) için özel şablon; yoksa/kapalıysa null */
     ozelSablonUrl: string | null;
   };
   kalemler: { urunAd: string; adet: number; birimFiyat: number }[];
 };
 
-function paraFormat(n: number, sembol: string) {
-  return `${sembol}${n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-async function gorseliGom(pdf: PDFDocument, url: string) {
-  const res = await fetch(url);
-  if (!res.ok) return null;
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  const contentType = res.headers.get("content-type") ?? "";
-  try {
-    if (contentType.includes("png") || url.toLowerCase().includes(".png")) {
-      return await pdf.embedPng(bytes);
-    }
-    return await pdf.embedJpg(bytes);
-  } catch {
-    return null;
-  }
-}
-
 export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array> {
-  const sembol = paraBirimiSembol(data.paraBirimi);
-  const [fontBytes, fontBoldBytes] = await Promise.all([
-    fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Regular.ttf")),
-    fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Bold.ttf")),
-  ]);
+  const M = TEKLIF_METIN[data.dil];
+  const para = (n: number) => paraFormat(n, data.paraBirimi, data.dil);
 
-  let pdf: PDFDocument;
-  let sayfa: PDFPage;
-  let sablonModu = false;
+  const belge = await belgeAc(data.sirket.ozelSablonUrl);
+  const { pdf, font, fontBold, sablonModu } = belge;
+  let sayfa: PDFPage = belge.sayfa;
 
-  if (data.sirket.ozelSablonUrl) {
-    try {
-      const res = await fetch(data.sirket.ozelSablonUrl);
-      if (res.ok) {
-        const sablonBytes = new Uint8Array(await res.arrayBuffer());
-        pdf = await PDFDocument.load(sablonBytes);
-        sayfa = pdf.getPages()[0];
-        sablonModu = true;
-      } else {
-        pdf = await PDFDocument.create();
-        sayfa = pdf.addPage(A4 as unknown as [number, number]);
-      }
-    } catch {
-      pdf = await PDFDocument.create();
-      sayfa = pdf.addPage(A4 as unknown as [number, number]);
-    }
-  } else {
-    pdf = await PDFDocument.create();
-    sayfa = pdf.addPage(A4 as unknown as [number, number]);
-  }
-
-  pdf.registerFontkit(fontkit);
-  const font = await pdf.embedFont(fontBytes, { subset: true });
-  const fontBold = await pdf.embedFont(fontBoldBytes, { subset: true });
-
-  const sayfaBoyutu = sablonModu ? sayfa.getSize() : { width: A4[0], height: A4[1] };
   const solMargin = 48;
-  const sagMargin = sayfaBoyutu.width - 48;
-  const ustBaslikYuksekligi = 110;
-  let y = sablonModu ? sayfaBoyutu.height - ustBaslikYuksekligi : sayfaBoyutu.height - 48;
-
-  // Şablon modunda: kullanıcının yüklediği sayfa boş olmayabilir (kendi eski bir teklifini
-  // yüklemiş olabilir) — üst kısmı (antet/logo) olduğu gibi bırakıp, altındaki her şeyi beyazla
-  // kapatarak temiz bir yüzey oluşturuyoruz, böylece kullanıcı şablonu elle boşaltmak zorunda kalmıyor.
-  if (sablonModu) {
-    sayfa.drawRectangle({
-      x: 0,
-      y: 0,
-      width: sayfaBoyutu.width,
-      height: sayfaBoyutu.height - ustBaslikYuksekligi + 12,
-      color: rgb(1, 1, 1),
-    });
-  }
+  const sagMargin = belge.genislik - 48;
+  let y = sablonModu ? belge.yukseklik - UST_BASLIK_YUKSEKLIGI : belge.yukseklik - 48;
 
   function yaz(
     metin: string,
     x: number,
     yPos: number,
-    opts: {
-      boyut?: number;
-      renk?: ReturnType<typeof rgb>;
-      hizalama?: "sol" | "sag";
-      kalin?: boolean;
-      font?: PDFFont;
-    } = {},
+    opts: { boyut?: number; renk?: Renk; hizalama?: "sol" | "sag"; kalin?: boolean } = {},
   ) {
     const boyut = opts.boyut ?? 10;
-    const renk = opts.renk ?? SIYAH;
-    const kullanilanFont = opts.font ?? (opts.kalin ? fontBold : font);
-    const genislik = kullanilanFont.widthOfTextAtSize(metin, boyut);
+    const f = opts.kalin ? fontBold : font;
+    const genislik = f.widthOfTextAtSize(metin, boyut);
     const cizimX = opts.hizalama === "sag" ? x - genislik : x;
-    sayfa.drawText(metin, { x: cizimX, y: yPos, size: boyut, font: kullanilanFont, color: renk });
+    sayfa.drawText(metin, { x: cizimX, y: yPos, size: boyut, font: f, color: opts.renk ?? RENK.SIYAH });
   }
 
   function coklusatirYaz(metin: string, x: number, yBaslangic: number, maksGenislik: number, boyut = 9.5) {
@@ -146,7 +73,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     for (const kelime of kelimeler) {
       const aday = satir ? `${satir} ${kelime}` : kelime;
       if (font.widthOfTextAtSize(aday, boyut) > maksGenislik && satir) {
-        sayfa.drawText(satir, { x, y: yPos, size: boyut, font, color: SIYAH });
+        sayfa.drawText(satir, { x, y: yPos, size: boyut, font, color: RENK.SIYAH });
         satir = kelime;
         yPos -= boyut + 3;
       } else {
@@ -154,7 +81,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
       }
     }
     if (satir) {
-      sayfa.drawText(satir, { x, y: yPos, size: boyut, font, color: SIYAH });
+      sayfa.drawText(satir, { x, y: yPos, size: boyut, font, color: RENK.SIYAH });
       yPos -= boyut + 3;
     }
     return yPos;
@@ -165,8 +92,27 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
       start: { x: solMargin, y: yPos },
       end: { x: sagMargin, y: yPos },
       thickness: 0.75,
-      color: AC_GRI,
+      color: RENK.AC_GRI,
     });
+  }
+
+  const sutunlar = [
+    { baslik: M.urunAciklama, x: solMargin, hizalama: "sol" as const },
+    { baslik: M.adet, x: solMargin + 300, hizalama: "sag" as const },
+    { baslik: M.birimFiyat, x: solMargin + 420, hizalama: "sag" as const },
+    { baslik: M.tutar, x: sagMargin, hizalama: "sag" as const },
+  ];
+
+  function tabloBasligiCiz() {
+    sayfa.drawRectangle({
+      x: solMargin,
+      y: y - 6,
+      width: sagMargin - solMargin,
+      height: 20,
+      color: RENK.ZEMIN,
+    });
+    sutunlar.forEach((s) => yaz(s.baslik, s.x, y, { boyut: 9, renk: RENK.GRI, hizalama: s.hizalama }));
+    y -= 22;
   }
 
   function yeniSayfaGerekirse() {
@@ -177,31 +123,9 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     }
   }
 
-  const sutunlar = [
-    { baslik: "Ürün / Açıklama", x: solMargin, hizalama: "sol" as const },
-    { baslik: "Adet", x: solMargin + 300, hizalama: "sag" as const },
-    { baslik: "Birim Fiyat", x: solMargin + 420, hizalama: "sag" as const },
-    { baslik: "Tutar", x: sagMargin, hizalama: "sag" as const },
-  ];
-
-  function tabloBasligiCiz() {
-    sayfa.drawRectangle({
-      x: solMargin,
-      y: y - 6,
-      width: sagMargin - solMargin,
-      height: 20,
-      color: rgb(0.965, 0.965, 0.949),
-    });
-    sutunlar.forEach((s) => yaz(s.baslik, s.x, y, { boyut: 9, renk: GRI, hizalama: s.hizalama }));
-    y -= 22;
-  }
-
   // ── Kendi tasarımımız: üst başlık (logo + firma bilgisi) ──
   if (!sablonModu) {
-    let logoImg = null;
-    if (data.sirket.logoUrl) {
-      logoImg = await gorseliGom(pdf, data.sirket.logoUrl);
-    }
+    const logoImg = data.sirket.logoUrl ? await gorseliGom(pdf, data.sirket.logoUrl) : null;
 
     if (logoImg) {
       const maxW = 110;
@@ -212,72 +136,74 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
       sayfa.drawImage(logoImg, { x: sagMargin - w, y: y - h + 10, width: w, height: h });
     }
 
-    yaz(data.sirket.sirketAdi || "Şirketim", solMargin, y, { boyut: 14, kalin: true });
+    yaz(data.sirket.sirketAdi || "—", solMargin, y, { boyut: 14, kalin: true });
     y -= 15;
     const bilgiSatirlari = [data.sirket.adres, data.sirket.telefon, data.sirket.eposta].filter(
       Boolean,
     ) as string[];
     for (const satir of bilgiSatirlari) {
-      yaz(satir, solMargin, y, { boyut: 9, renk: GRI });
+      yaz(satir, solMargin, y, { boyut: 9, renk: RENK.GRI });
       y -= 12;
     }
     if (data.sirket.vergiNo) {
-      yaz(`Vergi No: ${data.sirket.vergiNo}`, solMargin, y, { boyut: 9, renk: GRI });
+      yaz(`${M.vergiNo}: ${data.sirket.vergiNo}`, solMargin, y, { boyut: 9, renk: RENK.GRI });
       y -= 12;
     }
 
     y -= 8;
-    yaz(data.tip === "alis" ? "ALIŞ TEKLİFİ" : "TEKLİF", sagMargin, y + 12 + bilgiSatirlari.length * 12, {
+    yaz(data.tip === "alis" ? M.baslikAlis : M.baslikSatis, sagMargin, y + 12 + bilgiSatirlari.length * 12, {
       boyut: 16,
       hizalama: "sag",
       kalin: true,
-      renk: YESIL,
+      renk: RENK.YESIL,
     });
   }
 
-  // ── Teklif No + Tarih (her iki modda da) ──
-  yaz(`Teklif No: ${data.teklifNo ?? "—"}`, sagMargin, y, { boyut: 10.5, hizalama: "sag", kalin: true });
+  // ── Teklif No + Tarih ──
+  yaz(`${M.teklifNo}: ${data.teklifNo ?? "—"}`, sagMargin, y, { boyut: 10.5, hizalama: "sag", kalin: true });
   y -= 14;
-  yaz(new Date(data.tarih).toLocaleDateString("tr-TR"), sagMargin, y, { boyut: 10, hizalama: "sag", renk: GRI });
+  yaz(tarihFormat(data.tarih, data.dil), sagMargin, y, { boyut: 10, hizalama: "sag", renk: RENK.GRI });
   y -= 24;
   cizgi(y);
   y -= 20;
 
-  // ── ALICI ──
-  yaz("ALICI", solMargin, y, { boyut: 9, renk: GRI, kalin: true });
+  // ── ALICI / TEDARİKÇİ ──
+  yaz(data.tip === "alis" ? M.aliciAlis : M.aliciSatis, solMargin, y, {
+    boyut: 9,
+    renk: RENK.GRI,
+    kalin: true,
+  });
   y -= 15;
   yaz(data.firma.ad, solMargin, y, { boyut: 11.5, kalin: true });
   y -= 15;
-  if (data.firma.adres) {
-    y = coklusatirYaz(data.firma.adres, solMargin, y, 260);
-  }
+  if (data.firma.adres) y = coklusatirYaz(data.firma.adres, solMargin, y, 260);
   if (data.firma.telefon) {
-    yaz(data.firma.telefon, solMargin, y, { boyut: 9.5, renk: GRI });
+    yaz(data.firma.telefon, solMargin, y, { boyut: 9.5, renk: RENK.GRI });
     y -= 13;
   }
   if (data.firma.eposta) {
-    yaz(data.firma.eposta, solMargin, y, { boyut: 9.5, renk: GRI });
+    yaz(data.firma.eposta, solMargin, y, { boyut: 9.5, renk: RENK.GRI });
     y -= 13;
   }
   if (data.firma.vergiNo) {
-    yaz(`Vergi No: ${data.firma.vergiNo}`, solMargin, y, { boyut: 9.5, renk: GRI });
+    yaz(`${M.vergiNo}: ${data.firma.vergiNo}`, solMargin, y, { boyut: 9.5, renk: RENK.GRI });
     y -= 13;
   }
   y -= 22;
 
-  // ── Mesaj (selamlama paragrafı) ──
+  // ── Mesaj ──
   if (data.mesaj) {
     y = coklusatirYaz(data.mesaj, solMargin, y, sagMargin - solMargin, 9.5);
     y -= 30;
   }
 
-  // ── Bilgi tablosu: Satıcı / Termin / Nakliye / Teslimat / Şartlar ──
+  // ── Bilgi tablosu ──
   const bilgiAlanlari = [
-    { baslik: "SATICI", deger: data.satici },
-    { baslik: "TERMİN", deger: data.termin },
-    { baslik: "NAKLİYE", deger: data.nakliye },
-    { baslik: "TESLİMAT", deger: data.teslimatSekli },
-    { baslik: "ÖDEME ŞARTLARI", deger: data.odemeSartlari },
+    { baslik: M.satici, deger: data.satici },
+    { baslik: M.termin, deger: data.termin },
+    { baslik: M.nakliye, deger: data.nakliye },
+    { baslik: M.teslimat, deger: data.teslimatSekli },
+    { baslik: M.odemeSartlari, deger: data.odemeSartlari },
   ].filter((a) => a.deger);
 
   if (bilgiAlanlari.length > 0) {
@@ -287,11 +213,11 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
       y: y - 6,
       width: sagMargin - solMargin,
       height: 38,
-      color: rgb(0.965, 0.965, 0.949),
+      color: RENK.ZEMIN,
     });
     bilgiAlanlari.forEach((a, i) => {
       const x = solMargin + i * kolonGenislik + 8;
-      yaz(a.baslik, x, y + 14, { boyut: 8, renk: GRI, kalin: true });
+      yaz(a.baslik, x, y + 14, { boyut: 8, renk: RENK.GRI, kalin: true });
       yaz(a.deger || "", x, y, { boyut: 9.5 });
     });
     y -= 46;
@@ -307,43 +233,49 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     araToplam += tutar;
     yaz(k.urunAd, solMargin, y, { boyut: 10 });
     yaz(String(k.adet), solMargin + 300, y, { boyut: 10, hizalama: "sag" });
-    yaz(paraFormat(k.birimFiyat, sembol), solMargin + 420, y, { boyut: 10, hizalama: "sag" });
-    yaz(paraFormat(tutar, sembol), sagMargin, y, { boyut: 10, hizalama: "sag" });
+    yaz(para(k.birimFiyat), solMargin + 420, y, { boyut: 10, hizalama: "sag" });
+    yaz(para(tutar), sagMargin, y, { boyut: 10, hizalama: "sag" });
     y -= 18;
   }
 
   y -= 6;
-  if (y < ALT_SINIR + 110) {
+  if (y < ALT_SINIR + 130) {
     sayfa = pdf.addPage(A4 as unknown as [number, number]);
     y = A4[1] - 48;
   }
   cizgi(y);
   y -= 24;
 
-  const kdvTutari = araToplam * (data.kdvOrani / 100);
-  const genelToplam = araToplam + kdvTutari - data.iskonto;
+  const matrah = araToplam + data.kargoBedeli;
+  const kdvTutari = matrah * (data.kdvOrani / 100);
+  const genelToplam = matrah + kdvTutari - data.iskonto;
 
   const ozetX = solMargin + 320;
-  yaz("Ara Toplam", ozetX, y, { boyut: 10, renk: GRI });
-  yaz(paraFormat(araToplam, sembol), sagMargin, y, { boyut: 10, hizalama: "sag" });
+  yaz(M.araToplam, ozetX, y, { boyut: 10, renk: RENK.GRI });
+  yaz(para(araToplam), sagMargin, y, { boyut: 10, hizalama: "sag" });
   y -= 16;
-  yaz(`KDV (%${data.kdvOrani})`, ozetX, y, { boyut: 10, renk: GRI });
-  yaz(paraFormat(kdvTutari, sembol), sagMargin, y, { boyut: 10, hizalama: "sag" });
-  y -= 16;
-  if (data.iskonto > 0) {
-    yaz("İskonto", ozetX, y, { boyut: 10, renk: GRI });
-    yaz(`-${paraFormat(data.iskonto, sembol)}`, sagMargin, y, { boyut: 10, hizalama: "sag" });
+  if (data.kargoBedeli > 0) {
+    yaz(M.kargo, ozetX, y, { boyut: 10, renk: RENK.GRI });
+    yaz(para(data.kargoBedeli), sagMargin, y, { boyut: 10, hizalama: "sag" });
     y -= 16;
   }
-  yaz("Genel Toplam", ozetX, y, { boyut: 12, renk: YESIL, kalin: true });
-  yaz(paraFormat(genelToplam, sembol), sagMargin, y, { boyut: 12, renk: YESIL, hizalama: "sag", kalin: true });
+  yaz(`${M.kdv} (${yuzdeFormat(data.kdvOrani, data.dil)})`, ozetX, y, { boyut: 10, renk: RENK.GRI });
+  yaz(para(kdvTutari), sagMargin, y, { boyut: 10, hizalama: "sag" });
+  y -= 16;
+  if (data.iskonto > 0) {
+    yaz(M.iskonto, ozetX, y, { boyut: 10, renk: RENK.GRI });
+    yaz(`-${para(data.iskonto)}`, sagMargin, y, { boyut: 10, hizalama: "sag" });
+    y -= 16;
+  }
+  yaz(M.genelToplam, ozetX, y, { boyut: 12, renk: RENK.YESIL, kalin: true });
+  yaz(para(genelToplam), sagMargin, y, { boyut: 12, renk: RENK.YESIL, hizalama: "sag", kalin: true });
   y -= 30;
 
   // ── Banka bilgisi ──
   if (data.sirket.bankaBilgisi && y > ALT_SINIR + 40) {
     const satirlar = data.sirket.bankaBilgisi.split("\n").filter(Boolean);
     for (const satir of satirlar) {
-      yaz(satir, solMargin, y, { boyut: 9, renk: GRI });
+      yaz(satir, solMargin, y, { boyut: 9, renk: RENK.GRI });
       y -= 12;
     }
     y -= 8;
@@ -351,7 +283,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
 
   // ── Notlar ──
   if (data.notlar && y > ALT_SINIR + 20) {
-    yaz("NOT", solMargin, y, { boyut: 8.5, renk: GRI, kalin: true });
+    yaz(M.not, solMargin, y, { boyut: 8.5, renk: RENK.GRI, kalin: true });
     y -= 13;
     coklusatirYaz(data.notlar, solMargin, y, sagMargin - solMargin, 9);
   }
@@ -362,7 +294,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
       y: 30,
       size: 8,
       font,
-      color: GRI,
+      color: RENK.GRI,
     });
   }
 

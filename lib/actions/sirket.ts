@@ -70,37 +70,45 @@ export async function removeLogo() {
   revalidatePath("/biz");
 }
 
-export async function uploadOzelSablon(formData: FormData) {
+export type SablonTuru = "satis" | "alis";
+
+const SABLON_ALANI: Record<SablonTuru, { kolon: "ozel_sablon_url" | "alis_teklif_sablon_url"; dosya: string }> = {
+  satis: { kolon: "ozel_sablon_url", dosya: "ozel-sablon.pdf" },
+  alis: { kolon: "alis_teklif_sablon_url", dosya: "alis-teklif-sablon.pdf" },
+};
+
+export async function uploadOzelSablon(tur: SablonTuru, formData: FormData) {
   await girisYapmisMi();
+  const alan = SABLON_ALANI[tur];
   const file = formData.get("sablon") as File | null;
   if (!file || file.size === 0) throw new Error("Dosya seçilmedi.");
   if (file.type !== "application/pdf") throw new Error("Şablon bir PDF dosyası olmalı.");
 
   const admin = createAdminClient();
-  const yol = `ozel-sablon.pdf`;
 
   const { error: yuklemeHata } = await admin.storage
     .from(BUCKET)
-    .upload(yol, file, { upsert: true, contentType: "application/pdf" });
+    .upload(alan.dosya, file, { upsert: true, contentType: "application/pdf" });
   if (yuklemeHata) throw new Error(yuklemeHata.message);
 
-  const { data: publicUrl } = admin.storage.from(BUCKET).getPublicUrl(yol);
+  const { data: publicUrl } = admin.storage.from(BUCKET).getPublicUrl(alan.dosya);
   const supabase = await createClient();
   const { error } = await supabase.from("sirket_profili").upsert({
     id: true,
-    ozel_sablon_url: `${publicUrl.publicUrl}?v=${Date.now()}`,
+    [alan.kolon]: `${publicUrl.publicUrl}?v=${Date.now()}`,
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/biz");
 }
 
-export async function removeOzelSablon() {
+export async function removeOzelSablon(tur: SablonTuru) {
   await girisYapmisMi();
+  const alan = SABLON_ALANI[tur];
   const supabase = await createClient();
   const { error } = await supabase
     .from("sirket_profili")
-    .upsert({ id: true, ozel_sablon_url: null, updated_at: new Date().toISOString() });
+    .upsert({ id: true, [alan.kolon]: null, updated_at: new Date().toISOString() });
   if (error) throw new Error(error.message);
   revalidatePath("/biz");
 }

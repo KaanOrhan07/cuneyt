@@ -36,9 +36,11 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
   }
 
   const [kdvOrani, setKdvOrani] = useState("20");
+  const [kargoBedeli, setKargoBedeli] = useState("0");
   const araToplam = rows.reduce((s, r) => s + (Number(r.adet) || 0) * (Number(r.birim_fiyat) || 0), 0);
-  const kdvTutari = araToplam * ((Number(kdvOrani) || 0) / 100);
-  const genelToplam = araToplam + kdvTutari;
+  const kargo = Number(kargoBedeli) || 0;
+  const kdvTutari = (araToplam + kargo) * ((Number(kdvOrani) || 0) / 100);
+  const genelToplam = araToplam + kargo + kdvTutari;
 
   return (
     <form
@@ -109,6 +111,17 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
             className="w-28"
           />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Kargo Bedeli (₺)</Label>
+          <Input
+            type="number"
+            step="0.01"
+            name="kargo_bedeli"
+            value={kargoBedeli}
+            onChange={(e) => setKargoBedeli(e.target.value)}
+            className="w-32"
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -167,6 +180,12 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
           <span>Ara Toplam</span>
           <span className="font-mono">{formatTL(araToplam)}</span>
         </div>
+        {kargo > 0 && (
+          <div className="flex w-48 justify-between text-text-dim">
+            <span>Kargo</span>
+            <span className="font-mono">{formatTL(kargo)}</span>
+          </div>
+        )}
         <div className="flex w-48 justify-between text-text-dim">
           <span>KDV (%{kdvOrani || 0})</span>
           <span className="font-mono">{formatTL(kdvTutari)}</span>

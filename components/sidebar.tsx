@@ -9,13 +9,17 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/firmalar", label: "Firmalar" },
   { href: "/siparisler", label: "Siparişler" },
-  { href: "/teklifler", label: "Teklifler" },
+  { href: "/teklifler", label: "Satış Teklifleri" },
+  { href: "/alis-teklifleri", label: "Alış Teklifleri" },
+  { href: "/tedarik", label: "Tedarik" },
   { href: "/teslimatlar", label: "Teslimatlar" },
   { href: "/urunler", label: "Ürünler / Stok" },
+  { href: "/finans", label: "Finans" },
   { href: "/tablolar", label: "Tablolar" },
   { href: "/ditables", label: "DiTables" },
   { href: "/stok-hareketleri", label: "Stok Hareketleri" },
   { href: "/raporlar", label: "Raporlar" },
+  { href: "/kayitlar", label: "Kayıtlar" },
   { href: "/biz", label: "Biz" },
 ];
 

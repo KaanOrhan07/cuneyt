@@ -15,6 +15,7 @@ export function TeklifOlusturForm({
   varsayilanSatici,
   varsayilanNotlar,
   sirketSablonVarMi,
+  tip,
 }: {
   firmalar: Firma[];
   urunler: Urun[];
@@ -22,24 +23,26 @@ export function TeklifOlusturForm({
   varsayilanSatici?: string;
   varsayilanNotlar?: string;
   sirketSablonVarMi?: boolean;
+  tip: "alis" | "satis";
 }) {
   const [state, formAction, pending] = useActionState<TeklifState, FormData>(
     createTeklif,
     undefined,
   );
-  const [tip, setTip] = useState<"alis" | "satis">("satis");
   const [rows, setRows] = useState<Row[]>([{ urun_id: "", adet: "", birim_fiyat: "" }]);
   const [iskonto, setIskonto] = useState("0");
   const [kdvOrani, setKdvOrani] = useState("20");
   const [paraBirimi, setParaBirimi] = useState("TL");
+  const [kargoBedeli, setKargoBedeli] = useState("0");
 
   function updateRow(i: number, patch: Partial<Row>) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   }
 
   const araToplam = rows.reduce((s, r) => s + (Number(r.adet) || 0) * (Number(r.birim_fiyat) || 0), 0);
-  const kdvTutari = araToplam * ((Number(kdvOrani) || 0) / 100);
-  const genelToplam = araToplam + kdvTutari - (Number(iskonto) || 0);
+  const kargo = Number(kargoBedeli) || 0;
+  const kdvTutari = (araToplam + kargo) * ((Number(kdvOrani) || 0) / 100);
+  const genelToplam = araToplam + kargo + kdvTutari - (Number(iskonto) || 0);
 
   return (
     <form
@@ -62,7 +65,7 @@ export function TeklifOlusturForm({
     >
       <div className="flex gap-4">
         <div className="flex flex-1 flex-col gap-1.5">
-          <Label>Firma</Label>
+          <Label>{tip === "alis" ? "Tedarikçi Firma" : "Firma"}</Label>
           <Select name="firma_id" required defaultValue={varsayilanFirmaId ?? ""}>
             <option value="" disabled>
               Firma seçin
@@ -74,13 +77,7 @@ export function TeklifOlusturForm({
             ))}
           </Select>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label>Tip</Label>
-          <Select name="tip" value={tip} onChange={(e) => setTip(e.target.value as "alis" | "satis")}>
-            <option value="satis">Satış (verilen teklif)</option>
-            <option value="alis">Alış (alınan teklif)</option>
-          </Select>
-        </div>
+        <input type="hidden" name="tip" value={tip} />
         <div className="flex flex-col gap-1.5">
           <Label>Para Birimi</Label>
           <Select name="para_birimi" value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)}>
@@ -199,6 +196,17 @@ export function TeklifOlusturForm({
             className="w-32"
           />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Kargo Bedeli ({paraBirimiSembol(paraBirimi)})</Label>
+          <Input
+            type="number"
+            step="0.01"
+            name="kargo_bedeli"
+            value={kargoBedeli}
+            onChange={(e) => setKargoBedeli(e.target.value)}
+            className="w-32"
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -216,6 +224,12 @@ export function TeklifOlusturForm({
           <span>Ara Toplam</span>
           <span className="font-mono">{formatParaBirimi(araToplam, paraBirimi)}</span>
         </div>
+        {kargo > 0 && (
+          <div className="flex w-48 justify-between text-text-dim">
+            <span>Kargo</span>
+            <span className="font-mono">{formatParaBirimi(kargo, paraBirimi)}</span>
+          </div>
+        )}
         <div className="flex w-48 justify-between text-text-dim">
           <span>KDV (%{kdvOrani || 0})</span>
           <span className="font-mono">{formatParaBirimi(kdvTutari, paraBirimi)}</span>

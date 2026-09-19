@@ -1,44 +1,73 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { addCariOdeme, deleteCariHareket, deleteCariOdeme } from "@/lib/actions/cari";
 import { Button, Input } from "@/components/ui";
-import { formatTL, formatTarih } from "@/lib/format";
+import { formatParaBirimi, formatTarih } from "@/lib/format";
 import type { CariHareket, CariOdeme } from "@/lib/types";
 
 export function CariHareketRow({
   hareket,
   odemeler,
   firmaId,
+  firmaAd,
+  bugun,
 }: {
   hareket: CariHareket;
   odemeler: CariOdeme[];
   firmaId: string;
+  /** Verilirse ilk sütunda firma adı gösterilir (Finans sayfası) */
+  firmaAd?: string;
+  /** İstanbul bugün anahtarı (YYYY-MM-DD) — vade karşılaştırması için */
+  bugun: string;
 }) {
   const [odemeFormAcik, setOdemeFormAcik] = useState(false);
+  const [hata, setHata] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  const pb = hareket.para_birimi ?? "TL";
+  const yon = hareket.yon ?? "alacak";
+  const para = (n: number) => formatParaBirimi(n, pb);
+  const kolonSayisi = firmaAd !== undefined ? 11 : 10;
 
   const odenenTutar = odemeler.reduce((s, o) => s + o.tutar, 0);
   const kalanBorc = hareket.tutar - odenenTutar;
-  const vadeGecti = hareket.vade_tarihi && kalanBorc > 0 && new Date(hareket.vade_tarihi) < new Date();
+  const vadeGecti = !!hareket.vade_tarihi && kalanBorc > 0 && hareket.vade_tarihi < bugun;
 
   const durum =
     kalanBorc <= 0
-      ? { label: "Ödendi", tone: "green" as const }
+      ? { label: yon === "alacak" ? "Tahsil edildi" : "Ödendi", tone: "green" as const }
       : odenenTutar > 0
-        ? { label: "Kısmi Ödendi", tone: "orange" as const }
-        : { label: vadeGecti ? "Vadesi Geçti" : "Ödenmedi", tone: "orange" as const };
+        ? { label: vadeGecti ? "Kısmi · Vadesi Geçti" : "Kısmi", tone: "orange" as const }
+        : { label: vadeGecti ? "Vadesi Geçti" : yon === "alacak" ? "Tahsil edilmedi" : "Ödenmedi", tone: "orange" as const };
 
   return (
     <>
       <tr className="border-b border-border last:border-0">
+        {firmaAd !== undefined && (
+          <td className="py-2.5 font-medium">
+            <Link href={`/firmalar/${firmaId}?bolum=cari`} className="hover:text-green hover:underline">
+              {firmaAd}
+            </Link>
+          </td>
+        )}
+        <td className="py-2.5">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
+              yon === "alacak" ? "bg-green-soft text-green" : "bg-orange-soft text-[#C74519]"
+            }`}
+          >
+            {yon === "alacak" ? "Alacak" : "Verecek"}
+          </span>
+        </td>
         <td className="py-2.5 font-mono">{formatTarih(hareket.tarih)}</td>
         <td className="py-2.5">{hareket.fatura_no || "—"}</td>
         <td className="py-2.5 text-text-dim">{hareket.aciklama || "—"}</td>
-        <td className="py-2.5 font-mono">{formatTL(hareket.tutar)}</td>
-        <td className="py-2.5 font-mono">{formatTL(odenenTutar)}</td>
+        <td className="py-2.5 font-mono">{para(hareket.tutar)}</td>
+        <td className="py-2.5 font-mono">{para(odenenTutar)}</td>
         <td className={`py-2.5 font-mono font-semibold ${kalanBorc > 0 ? "text-orange" : ""}`}>
-          {formatTL(kalanBorc)}
+          {para(kalanBorc)}
         </td>
         <td className="py-2.5 font-mono text-text-dim">
           {hareket.vade_tarihi ? formatTarih(hareket.vade_tarihi) : "—"}
@@ -59,12 +88,12 @@ export function CariHareketRow({
                 onClick={() => setOdemeFormAcik((v) => !v)}
                 className="text-[11px] font-medium text-green hover:underline"
               >
-                Ödeme Ekle
+                {yon === "alacak" ? "Tahsilat Ekle" : "Ödeme Ekle"}
               </button>
             )}
             <button
               onClick={async () => {
-                if (!confirm("Bu borç kaydını silmek istediğinize emin misiniz?")) return;
+                if (!confirm("Bu cari kaydını silmek istediğinize emin misiniz?")) return;
                 await deleteCariHareket(hareket.id, firmaId);
               }}
               className="text-[11px] text-text-dim hover:text-orange"
@@ -77,13 +106,18 @@ export function CariHareketRow({
 
       {odemeFormAcik && (
         <tr className="border-b border-border bg-bg-elev">
-          <td colSpan={9} className="p-3">
+          <td colSpan={kolonSayisi} className="p-3">
             <form
               ref={formRef}
               action={async (formData) => {
-                await addCariOdeme(formData);
-                formRef.current?.reset();
-                setOdemeFormAcik(false);
+                setHata(null);
+                try {
+                  await addCariOdeme(formData);
+                  formRef.current?.reset();
+                  setOdemeFormAcik(false);
+                } catch (e) {
+                  setHata(e instanceof Error ? e.message : "Kaydedilemedi.");
+                }
               }}
               className="flex flex-wrap items-end gap-2.5"
             >
@@ -95,10 +129,11 @@ export function CariHareketRow({
                 step="0.01"
                 name="tutar"
                 required
-                placeholder={`Kalan: ₺${kalanBorc.toLocaleString("tr-TR")}`}
-                className="w-40"
+                placeholder={`Kalan: ${para(kalanBorc)}`}
+                className="w-44"
               />
-              <Button type="submit">Ödemeyi Kaydet</Button>
+              <Button type="submit">{yon === "alacak" ? "Tahsilatı Kaydet" : "Ödemeyi Kaydet"}</Button>
+              {hata && <span className="text-[12px] text-orange">{hata}</span>}
             </form>
           </td>
         </tr>
@@ -106,15 +141,15 @@ export function CariHareketRow({
 
       {odemeler.length > 0 && (
         <tr className="border-b border-border">
-          <td colSpan={9} className="bg-bg-elev px-3 py-2 text-[11.5px] text-text-dim">
-            Ödemeler:{" "}
+          <td colSpan={kolonSayisi} className="bg-bg-elev px-3 py-2 text-[11.5px] text-text-dim">
+            {yon === "alacak" ? "Tahsilatlar" : "Ödemeler"}:{" "}
             {odemeler.map((o) => (
               <span key={o.id} className="mr-3 inline-flex items-center gap-1">
-                {formatTarih(o.tarih)} — {formatTL(o.tutar)}
+                {formatTarih(o.tarih)} — {para(o.tutar)}
                 <button
                   onClick={() => deleteCariOdeme(o.id, firmaId)}
                   className="text-text-dim hover:text-orange"
-                  title="Ödemeyi sil"
+                  title="Kaydı sil"
                 >
                   ×
                 </button>
