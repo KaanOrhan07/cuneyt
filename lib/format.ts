@@ -19,7 +19,8 @@ export function paraBirimiSembol(paraBirimi: string) {
 }
 
 export function formatParaBirimi(value: number, paraBirimi: string = "TL") {
-  return `${paraBirimiSembol(paraBirimi)}${value.toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  const sayi = Math.abs(value).toLocaleString("tr-TR", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return `${value < 0 ? "-" : ""}${paraBirimiSembol(paraBirimi)}${sayi}`;
 }
 
 export function formatTarihSaat(value: string | Date) {

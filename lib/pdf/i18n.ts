@@ -26,7 +26,7 @@ export function yuzdeFormat(n: number, dil: Dil) {
 }
 
 export function paraFormat(n: number, paraBirimi: string, dil: Dil) {
-  return `${paraBirimiSembol(paraBirimi)}${sayiFormat(n, dil)}`;
+  return `${n < 0 ? "-" : ""}${paraBirimiSembol(paraBirimi)}${sayiFormat(Math.abs(n), dil)}`;
 }
 
 export const SIPARIS_METIN = {
