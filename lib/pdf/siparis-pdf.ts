@@ -64,6 +64,23 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
     sayfa.drawText(metin, { x: cizimX, y: yPos, size: boyut, font: kullanilanFont, color: renk });
   }
 
+  function satirBol(metin: string, boyut: number, maksGenislik: number): string[] {
+    const kelimeler = metin.split(/\s+/);
+    const sonuc: string[] = [];
+    let satir = "";
+    for (const kelime of kelimeler) {
+      const aday = satir ? `${satir} ${kelime}` : kelime;
+      if (font.widthOfTextAtSize(aday, boyut) > maksGenislik && satir) {
+        sonuc.push(satir);
+        satir = kelime;
+      } else {
+        satir = aday;
+      }
+    }
+    if (satir) sonuc.push(satir);
+    return sonuc;
+  }
+
   function cizgi(yPos: number) {
     sayfa.drawLine({
       start: { x: solMargin, y: yPos },
@@ -83,14 +100,6 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
     });
     sutunlar.forEach((s) => yaz(s.baslik, s.x, y, { boyut: 9, renk: GRI, hizalama: s.hizalama }));
     y -= 22;
-  }
-
-  function yeniSayfaGerekirse() {
-    if (y < ALT_SINIR) {
-      sayfa = pdf.addPage(A4 as unknown as [number, number]);
-      y = UST_BASLANGIC;
-      tabloBasligiCiz();
-    }
   }
 
   // Başlık
@@ -140,15 +149,21 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
 
   let araToplam = 0;
   for (const k of data.kalemler) {
-    yeniSayfaGerekirse();
+    const urunSatirlari = satirBol(k.urunAd, 10, 220);
+    const satirYuksekligi = Math.max(urunSatirlari.length, 1) * 13 + 5;
+    if (y - satirYuksekligi < ALT_SINIR) {
+      sayfa = pdf.addPage(A4 as unknown as [number, number]);
+      y = UST_BASLANGIC;
+      tabloBasligiCiz();
+    }
     const tutar = k.adet * k.birimFiyat;
     araToplam += tutar;
-    yaz(k.urunAd, solMargin, y, { boyut: 10 });
+    urunSatirlari.forEach((satir, i) => yaz(satir, solMargin, y - i * 13, { boyut: 10 }));
     yaz(String(k.adet), solMargin + 240, y, { boyut: 10, hizalama: "sag" });
     yaz(String(k.teslimEdilenAdet), solMargin + 320, y, { boyut: 10, hizalama: "sag" });
     yaz(tl(k.birimFiyat), solMargin + 420, y, { boyut: 10, hizalama: "sag" });
     yaz(tl(tutar), sagMargin, y, { boyut: 10, hizalama: "sag" });
-    y -= 18;
+    y -= satirYuksekligi;
   }
 
   y -= 6;

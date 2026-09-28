@@ -1,5 +1,5 @@
 import { type PDFPage } from "pdf-lib";
-import { A4, RENK, UST_BASLIK_YUKSEKLIGI, belgeAc, gorseliGom, type Renk } from "./ortak";
+import { A4, RENK, belgeAc, gorseliGom, type Renk } from "./ortak";
 import { TEKLIF_METIN, paraFormat, tarihFormat, yuzdeFormat, type Dil } from "./i18n";
 
 const ALT_SINIR = 90;
@@ -35,8 +35,6 @@ export type TeklifPdfData = {
     vergiNo: string | null;
     bankaBilgisi: string | null;
     logoUrl: string | null;
-    /** Bu teklif türü (satış/alış) için özel şablon; yoksa/kapalıysa null */
-    ozelSablonUrl: string | null;
   };
   kalemler: { urunAd: string; adet: number; birimFiyat: number }[];
 };
@@ -45,13 +43,13 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
   const M = TEKLIF_METIN[data.dil];
   const para = (n: number) => paraFormat(n, data.paraBirimi, data.dil);
 
-  const belge = await belgeAc(data.sirket.ozelSablonUrl);
-  const { pdf, font, fontBold, sablonModu } = belge;
+  const belge = await belgeAc(null);
+  const { pdf, font, fontBold } = belge;
   let sayfa: PDFPage = belge.sayfa;
 
   const solMargin = 48;
   const sagMargin = belge.genislik - 48;
-  let y = sablonModu ? belge.yukseklik - UST_BASLIK_YUKSEKLIGI : belge.yukseklik - 48;
+  let y = belge.yukseklik - 48;
 
   function yaz(
     metin: string,
@@ -87,6 +85,23 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     return yPos;
   }
 
+  function satirBol(metin: string, boyut: number, maksGenislik: number): string[] {
+    const kelimeler = metin.split(/\s+/);
+    const sonuc: string[] = [];
+    let satir = "";
+    for (const kelime of kelimeler) {
+      const aday = satir ? `${satir} ${kelime}` : kelime;
+      if (font.widthOfTextAtSize(aday, boyut) > maksGenislik && satir) {
+        sonuc.push(satir);
+        satir = kelime;
+      } else {
+        satir = aday;
+      }
+    }
+    if (satir) sonuc.push(satir);
+    return sonuc;
+  }
+
   function cizgi(yPos: number) {
     sayfa.drawLine({
       start: { x: solMargin, y: yPos },
@@ -115,16 +130,8 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     y -= 22;
   }
 
-  function yeniSayfaGerekirse() {
-    if (y < ALT_SINIR) {
-      sayfa = pdf.addPage(A4 as unknown as [number, number]);
-      y = A4[1] - 48;
-      tabloBasligiCiz();
-    }
-  }
-
-  // ── Kendi tasarımımız: üst başlık (logo + firma bilgisi) ──
-  if (!sablonModu) {
+  // ── Üst başlık: logo + şirket bilgisi (Biz sayfasındaki verilerden, her zaman güncel) ──
+  {
     const logoImg = data.sirket.logoUrl ? await gorseliGom(pdf, data.sirket.logoUrl) : null;
 
     if (logoImg) {
@@ -228,14 +235,20 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
 
   let araToplam = 0;
   for (const k of data.kalemler) {
-    yeniSayfaGerekirse();
+    const urunSatirlari = satirBol(k.urunAd, 10, 280);
+    const satirYuksekligi = Math.max(urunSatirlari.length, 1) * 13 + 5;
+    if (y - satirYuksekligi < ALT_SINIR) {
+      sayfa = pdf.addPage(A4 as unknown as [number, number]);
+      y = A4[1] - 48;
+      tabloBasligiCiz();
+    }
     const tutar = k.adet * k.birimFiyat;
     araToplam += tutar;
-    yaz(k.urunAd, solMargin, y, { boyut: 10 });
+    urunSatirlari.forEach((satir, i) => yaz(satir, solMargin, y - i * 13, { boyut: 10 }));
     yaz(String(k.adet), solMargin + 300, y, { boyut: 10, hizalama: "sag" });
     yaz(para(k.birimFiyat), solMargin + 420, y, { boyut: 10, hizalama: "sag" });
     yaz(para(tutar), sagMargin, y, { boyut: 10, hizalama: "sag" });
-    y -= 18;
+    y -= satirYuksekligi;
   }
 
   y -= 6;
@@ -288,15 +301,13 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     coklusatirYaz(data.notlar, solMargin, y, sagMargin - solMargin, 9);
   }
 
-  if (!sablonModu) {
-    sayfa.drawText("Created by Digio Medya ve Yazılım", {
-      x: solMargin,
-      y: 30,
-      size: 8,
-      font,
-      color: RENK.GRI,
-    });
-  }
+  sayfa.drawText("Created by Digio Medya ve Yazılım", {
+    x: solMargin,
+    y: 30,
+    size: 8,
+    font,
+    color: RENK.GRI,
+  });
 
   return pdf.save();
 }

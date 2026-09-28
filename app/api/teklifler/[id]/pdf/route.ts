@@ -48,10 +48,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     urunler: { ad: string } | null;
   }[];
 
-  const sablonKullan = teklif.sablon_kullan !== false;
-  const turSablonu =
-    teklif.tip === "alis" ? sirket?.alis_teklif_sablon_url ?? null : sirket?.ozel_sablon_url ?? null;
-
   const pdfBytes = await generateTeklifPdf({
     dil,
     teklifNo: teklif.teklif_no,
@@ -83,7 +79,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       vergiNo: sirket?.vergi_no ?? null,
       bankaBilgisi: sirket?.banka_bilgisi ?? null,
       logoUrl: sirket?.logo_url ?? null,
-      ozelSablonUrl: sablonKullan ? turSablonu : null,
     },
     kalemler: rows.map((k) => ({
       urunAd: k.urunler?.ad ?? "—",
