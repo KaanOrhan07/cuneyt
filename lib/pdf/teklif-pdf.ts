@@ -1,5 +1,5 @@
 import { type PDFPage } from "pdf-lib";
-import { A4, RENK, belgeAc, gorseliGom, type Renk } from "./ortak";
+import { A4, DIGIO_URL, RENK, baglantiEkle, belgeAc, gorseliGom, type Renk } from "./ortak";
 import { TEKLIF_METIN, paraFormat, tarihFormat, yuzdeFormat, type Dil } from "./i18n";
 
 const ALT_SINIR = 90;
@@ -132,6 +132,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
 
   // ── Üst başlık: logo + şirket bilgisi (Biz sayfasındaki verilerden, her zaman güncel) ──
   {
+    const ustY = y;
     const logoImg = data.sirket.logoUrl ? await gorseliGom(pdf, data.sirket.logoUrl) : null;
 
     if (logoImg) {
@@ -140,14 +141,22 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
       const oran = Math.min(maxW / logoImg.width, maxH / logoImg.height, 1);
       const w = logoImg.width * oran;
       const h = logoImg.height * oran;
-      sayfa.drawImage(logoImg, { x: sagMargin - w, y: y - h + 10, width: w, height: h });
+      sayfa.drawImage(logoImg, { x: sagMargin - w, y: ustY - h + 10, width: w, height: h });
     }
 
-    yaz(data.sirket.sirketAdi || "—", solMargin, y, { boyut: 14, kalin: true });
-    y -= 15;
-    const bilgiSatirlari = [data.sirket.adres, data.sirket.telefon, data.sirket.eposta].filter(
-      Boolean,
-    ) as string[];
+    const isimGenislik = sagMargin - solMargin - (logoImg ? 130 : 0);
+    const isimSatirlari = satirBol(data.sirket.sirketAdi || "—", 14, isimGenislik);
+    isimSatirlari.forEach((satir, i) => yaz(satir, solMargin, y - i * 16, { boyut: 14, kalin: true }));
+    y -= isimSatirlari.length * 16 - 1;
+
+    const bilgiGenislik = sagMargin - solMargin - 20;
+    const adresSatirlari = data.sirket.adres
+      ? data.sirket.adres.split(/\r?\n/).flatMap((satir) => satirBol(satir, 9, bilgiGenislik))
+      : [];
+    const bilgiSatirlari = [
+      ...adresSatirlari,
+      ...([data.sirket.telefon, data.sirket.eposta].filter(Boolean) as string[]),
+    ];
     for (const satir of bilgiSatirlari) {
       yaz(satir, solMargin, y, { boyut: 9, renk: RENK.GRI });
       y -= 12;
@@ -301,13 +310,9 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     coklusatirYaz(data.notlar, solMargin, y, sagMargin - solMargin, 9);
   }
 
-  sayfa.drawText("Created by Digio Medya ve Yazılım", {
-    x: solMargin,
-    y: 30,
-    size: 8,
-    font,
-    color: RENK.GRI,
-  });
+  const digioMetin = "Created by Digio Medya ve Yazılım";
+  sayfa.drawText(digioMetin, { x: solMargin, y: 30, size: 8, font, color: RENK.GRI });
+  baglantiEkle(pdf, sayfa, DIGIO_URL, solMargin, 28, font.widthOfTextAtSize(digioMetin, 8), 10);
 
   return pdf.save();
 }

@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
+import { PDFDocument, PDFString, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -32,6 +32,33 @@ export async function gorseliGom(pdf: PDFDocument, url: string): Promise<PDFImag
   } catch {
     return null;
   }
+}
+
+export const DIGIO_URL = "https://digiomedya.com";
+
+/** Verilen dikdörtgenin üzerine tıklanabilir bir bağlantı (URI action) ekler. */
+export function baglantiEkle(
+  pdf: PDFDocument,
+  sayfa: PDFPage,
+  url: string,
+  x: number,
+  y: number,
+  genislik: number,
+  yukseklik: number,
+) {
+  const annotDict = pdf.context.obj({
+    Type: "Annot",
+    Subtype: "Link",
+    Rect: [x, y, x + genislik, y + yukseklik],
+    Border: [0, 0, 0],
+    A: {
+      Type: "Action",
+      S: "URI",
+      URI: PDFString.of(url),
+    },
+  });
+  const annotRef = pdf.context.register(annotDict);
+  sayfa.node.addAnnot(annotRef);
 }
 
 export type Belge = {

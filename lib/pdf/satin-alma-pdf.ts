@@ -1,5 +1,5 @@
 import { type PDFFont, type PDFPage } from "pdf-lib";
-import { A4, RENK, belgeAc, gorseliGom, type Renk } from "./ortak";
+import { A4, DIGIO_URL, RENK, baglantiEkle, belgeAc, gorseliGom, type Renk } from "./ortak";
 import { TEDARIK_METIN, paraFormat, tarihFormat, yuzdeFormat, type Dil } from "./i18n";
 
 const ALT_SINIR = 80;
@@ -118,8 +118,7 @@ export async function generateSatinAlmaPdf(data: SatinAlmaPdfData): Promise<Uint
   y -= 30;
 
   // ── Kendi şirket bilgileri ──
-  yaz(data.sirket.sirketAdi || "—", solMargin, y, { boyut: 11.5, kalin: true });
-  y -= 15;
+  blokYaz(satirlaraBol(data.sirket.sirketAdi || "—", fontBold, 11.5, sagMargin - solMargin), 11.5, RENK.SIYAH, true);
   if (data.sirket.adres) blokYaz(satirlaraBol(data.sirket.adres, font, 9.5, 300), 9.5, RENK.GRI);
   if (data.sirket.telefon) blokYaz([data.sirket.telefon], 9.5, RENK.GRI);
   if (data.sirket.eposta) blokYaz([data.sirket.eposta], 9.5, RENK.GRI);
@@ -129,8 +128,7 @@ export async function generateSatinAlmaPdf(data: SatinAlmaPdfData): Promise<Uint
   // ── Tedarikçi ──
   yaz(M.tedarikci, solMargin, y, { boyut: 9, kalin: true, renk: RENK.GRI });
   y -= 14;
-  yaz(data.tedarikci.ad, solMargin, y, { boyut: 11, kalin: true });
-  y -= 14.5;
+  blokYaz(satirlaraBol(data.tedarikci.ad, fontBold, 11, sagMargin - solMargin), 11, RENK.SIYAH, true);
   if (data.tedarikci.adres) blokYaz(satirlaraBol(data.tedarikci.adres, font, 9.5, 300), 9.5);
   if (data.tedarikci.telefon) blokYaz([data.tedarikci.telefon], 9.5, RENK.GRI);
   if (data.tedarikci.eposta) blokYaz([data.tedarikci.eposta], 9.5, RENK.GRI);
@@ -293,13 +291,9 @@ export async function generateSatinAlmaPdf(data: SatinAlmaPdfData): Promise<Uint
     }
   }
 
-  sayfa.drawText("Created by Digio Medya ve Yazılım", {
-    x: solMargin,
-    y: 30,
-    size: 8,
-    font,
-    color: RENK.GRI,
-  });
+  const digioMetin = "Created by Digio Medya ve Yazılım";
+  sayfa.drawText(digioMetin, { x: solMargin, y: 30, size: 8, font, color: RENK.GRI });
+  baglantiEkle(pdf, sayfa, DIGIO_URL, solMargin, 28, font.widthOfTextAtSize(digioMetin, 8), 10);
 
   return pdf.save();
 }
