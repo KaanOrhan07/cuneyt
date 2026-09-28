@@ -134,6 +134,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
   {
     const ustY = y;
     const logoImg = data.sirket.logoUrl ? await gorseliGom(pdf, data.sirket.logoUrl) : null;
+    let logoAltSinir = Infinity;
 
     if (logoImg) {
       const maxW = 110;
@@ -142,6 +143,7 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
       const w = logoImg.width * oran;
       const h = logoImg.height * oran;
       sayfa.drawImage(logoImg, { x: sagMargin - w, y: ustY - h + 10, width: w, height: h });
+      logoAltSinir = ustY - h;
     }
 
     const isimGenislik = sagMargin - solMargin - (logoImg ? 130 : 0);
@@ -167,7 +169,8 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     }
 
     y -= 8;
-    yaz(data.tip === "alis" ? M.baslikAlis : M.baslikSatis, sagMargin, y + 12 + bilgiSatirlari.length * 12, {
+    const baslikY = Math.min(y + 12 + bilgiSatirlari.length * 12, logoAltSinir);
+    yaz(data.tip === "alis" ? M.baslikAlis : M.baslikSatis, sagMargin, baslikY, {
       boyut: 16,
       hizalama: "sag",
       kalin: true,
@@ -224,19 +227,23 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
 
   if (bilgiAlanlari.length > 0) {
     const kolonGenislik = (sagMargin - solMargin) / bilgiAlanlari.length;
+    const degerSatirlari = bilgiAlanlari.map((a) => satirBol(a.deger || "", 9.5, kolonGenislik - 16));
+    const maxSatir = Math.max(1, ...degerSatirlari.map((s) => s.length));
+    const kutuUst = y + 32;
+    const kutuAlt = y - 6 - (maxSatir - 1) * 13;
     sayfa.drawRectangle({
       x: solMargin,
-      y: y - 6,
+      y: kutuAlt,
       width: sagMargin - solMargin,
-      height: 38,
+      height: kutuUst - kutuAlt,
       color: RENK.ZEMIN,
     });
     bilgiAlanlari.forEach((a, i) => {
       const x = solMargin + i * kolonGenislik + 8;
       yaz(a.baslik, x, y + 14, { boyut: 8, renk: RENK.GRI, kalin: true });
-      yaz(a.deger || "", x, y, { boyut: 9.5 });
+      degerSatirlari[i].forEach((satir, si) => yaz(satir, x, y - si * 13, { boyut: 9.5 }));
     });
-    y -= 46;
+    y = kutuAlt - 40;
   }
 
   // ── Ürün tablosu ──
