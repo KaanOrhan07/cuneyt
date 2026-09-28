@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FirmaForm } from "@/components/firma-form";
-import { deleteFirma } from "@/lib/actions/firmalar";
+import { FirmaCard } from "@/components/firma-card";
 import { Input } from "@/components/ui";
 import { ExportExcelButton } from "@/components/export-excel-button";
 import { ImportExcelButton } from "@/components/import-excel-button";
@@ -80,37 +80,7 @@ export default async function FirmalarPage({
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        {(firmalar as Firma[] | null)?.map((f) => (
-          <div
-            key={f.id}
-            className="rounded-[14px] border border-border bg-card p-4 shadow-[var(--shadow)]"
-          >
-            <div className="flex items-start justify-between">
-              <Link href={`/firmalar/${f.id}`} className="flex items-center gap-2.5">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ background: f.renk }}
-                />
-                <span className="font-medium">{f.ad}</span>
-              </Link>
-              <form action={deleteFirma.bind(null, f.id)}>
-                <button className="text-[11px] text-text-dim hover:text-orange">Sil</button>
-              </form>
-            </div>
-            <div className="mt-3 flex gap-1.5">
-              {f.is_tedarikci && (
-                <span className="rounded-full bg-green-soft px-2 py-0.5 text-[11px] font-medium text-green">
-                  Tedarikçi
-                </span>
-              )}
-              {f.is_musteri && (
-                <span className="rounded-full bg-orange-soft px-2 py-0.5 text-[11px] font-medium text-[#C74519]">
-                  Müşteri
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
+        {(firmalar as Firma[] | null)?.map((f) => <FirmaCard key={f.id} firma={f} />)}
         {firmalar?.length === 0 && (
           <p className="text-[13px] text-text-dim">Henüz firma eklenmedi.</p>
         )}

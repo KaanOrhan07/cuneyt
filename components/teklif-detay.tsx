@@ -61,6 +61,9 @@ export async function TeklifDetay({ id, listeYolu }: { id: string; listeYolu: st
         </div>
         <div className="flex items-center gap-3">
           <TeklifDurumSelect id={teklif.id} durum={teklif.durum as TeklifDurum} />
+          <Link href={`${listeYolu}/${id}/duzenle`}>
+            <Button variant="secondary">Düzenle</Button>
+          </Link>
           <a href={`/api/teklifler/${id}/pdf?dil=tr`} target="_blank" rel="noopener noreferrer">
             <Button variant="secondary">PDF İndir (TR)</Button>
           </a>

@@ -1,12 +1,29 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createTeklif, type TeklifState } from "@/lib/actions/teklifler";
+import { createTeklif, updateTeklif, type TeklifState } from "@/lib/actions/teklifler";
 import { Button, Input, Label, Select, Textarea } from "@/components/ui";
 import { formatParaBirimi, PARA_BIRIMLERI, paraBirimiSembol } from "@/lib/format";
 import type { Firma, Urun } from "@/lib/types";
 
 type Row = { urun_id: string; adet: string; birim_fiyat: string };
+
+export type TeklifBaslangicDegerleri = {
+  firma_id: string;
+  satici: string;
+  termin: string;
+  nakliye: string;
+  teslimat_sekli: string;
+  odeme_sartlari: string;
+  mesaj: string;
+  notlar: string;
+  iskonto: string;
+  kdv_orani: string;
+  para_birimi: string;
+  kargo_bedeli: string;
+  sablon_kullan: boolean;
+  kalemler: Row[];
+};
 
 export function TeklifOlusturForm({
   firmalar,
@@ -16,6 +33,8 @@ export function TeklifOlusturForm({
   varsayilanNotlar,
   sirketSablonVarMi,
   tip,
+  duzenlemeId,
+  baslangic,
 }: {
   firmalar: Firma[];
   urunler: Urun[];
@@ -24,16 +43,21 @@ export function TeklifOlusturForm({
   varsayilanNotlar?: string;
   sirketSablonVarMi?: boolean;
   tip: "alis" | "satis";
+  /** Verilirse form düzenleme modunda çalışır: mevcut teklifi günceller. */
+  duzenlemeId?: string;
+  baslangic?: TeklifBaslangicDegerleri;
 }) {
   const [state, formAction, pending] = useActionState<TeklifState, FormData>(
-    createTeklif,
+    duzenlemeId ? updateTeklif.bind(null, duzenlemeId) : createTeklif,
     undefined,
   );
-  const [rows, setRows] = useState<Row[]>([{ urun_id: "", adet: "", birim_fiyat: "" }]);
-  const [iskonto, setIskonto] = useState("0");
-  const [kdvOrani, setKdvOrani] = useState("20");
-  const [paraBirimi, setParaBirimi] = useState("TL");
-  const [kargoBedeli, setKargoBedeli] = useState("0");
+  const [rows, setRows] = useState<Row[]>(
+    baslangic?.kalemler ?? [{ urun_id: "", adet: "", birim_fiyat: "" }],
+  );
+  const [iskonto, setIskonto] = useState(baslangic?.iskonto ?? "0");
+  const [kdvOrani, setKdvOrani] = useState(baslangic?.kdv_orani ?? "20");
+  const [paraBirimi, setParaBirimi] = useState(baslangic?.para_birimi ?? "TL");
+  const [kargoBedeli, setKargoBedeli] = useState(baslangic?.kargo_bedeli ?? "0");
 
   function updateRow(i: number, patch: Partial<Row>) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -66,7 +90,7 @@ export function TeklifOlusturForm({
       <div className="flex gap-4">
         <div className="flex flex-1 flex-col gap-1.5">
           <Label>{tip === "alis" ? "Tedarikçi Firma" : "Firma"}</Label>
-          <Select name="firma_id" required defaultValue={varsayilanFirmaId ?? ""}>
+          <Select name="firma_id" required defaultValue={baslangic?.firma_id ?? varsayilanFirmaId ?? ""}>
             <option value="" disabled>
               Firma seçin
             </option>
@@ -93,25 +117,25 @@ export function TeklifOlusturForm({
       <div className="flex gap-4">
         <div className="flex flex-1 flex-col gap-1.5">
           <Label>Satıcı</Label>
-          <Input name="satici" defaultValue={varsayilanSatici ?? ""} placeholder="Örn. Cüneyt Gökmen" />
+          <Input name="satici" defaultValue={baslangic?.satici ?? varsayilanSatici ?? ""} placeholder="Örn. Cüneyt Gökmen" />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Termin</Label>
-          <Input name="termin" placeholder="Örn. 2 hafta" className="w-32" />
+          <Input name="termin" defaultValue={baslangic?.termin ?? ""} placeholder="Örn. 2 hafta" className="w-32" />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Nakliye</Label>
-          <Input name="nakliye" placeholder="Örn. UPS" className="w-28" />
+          <Input name="nakliye" defaultValue={baslangic?.nakliye ?? ""} placeholder="Örn. UPS" className="w-28" />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Teslimat</Label>
-          <Input name="teslimat_sekli" placeholder="Örn. Kapıda" className="w-28" />
+          <Input name="teslimat_sekli" defaultValue={baslangic?.teslimat_sekli ?? ""} placeholder="Örn. Kapıda" className="w-28" />
         </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label>Ödeme Şartları</Label>
-        <Input name="odeme_sartlari" placeholder="Örn. Teslimatta ödeme" />
+        <Input name="odeme_sartlari" defaultValue={baslangic?.odeme_sartlari ?? ""} placeholder="Örn. Teslimatta ödeme" />
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -119,6 +143,7 @@ export function TeklifOlusturForm({
         <Textarea
           name="mesaj"
           rows={2}
+          defaultValue={baslangic?.mesaj ?? ""}
           placeholder="Örn. Firmamıza göstermiş olduğunuz ilgi için teşekkür ederiz."
         />
       </div>
@@ -214,7 +239,7 @@ export function TeklifOlusturForm({
         <Textarea
           name="notlar"
           rows={2}
-          defaultValue={varsayilanNotlar ?? ""}
+          defaultValue={baslangic?.notlar ?? varsayilanNotlar ?? ""}
           placeholder="Örn. Sipariş üzerine üretilen ürünler iptal edilemez."
         />
       </div>
@@ -248,7 +273,12 @@ export function TeklifOlusturForm({
 
       {sirketSablonVarMi && (
         <label className="flex items-center gap-2 text-[13px]">
-          <input type="checkbox" name="sablon_kullan" defaultChecked className="h-4 w-4" />
+          <input
+            type="checkbox"
+            name="sablon_kullan"
+            defaultChecked={baslangic ? baslangic.sablon_kullan : true}
+            className="h-4 w-4"
+          />
           Şirket şablonunuzu bu teklifte kullan (kapatırsanız DiTrack&apos;in kendi tasarımı kullanılır)
         </label>
       )}
@@ -258,7 +288,7 @@ export function TeklifOlusturForm({
       )}
 
       <Button type="submit" disabled={pending} className="self-start">
-        {pending ? "Kaydediliyor..." : "Teklifi Kaydet"}
+        {pending ? "Kaydediliyor..." : duzenlemeId ? "Değişiklikleri Kaydet" : "Teklifi Kaydet"}
       </Button>
     </form>
   );

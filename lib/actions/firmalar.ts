@@ -18,6 +18,25 @@ export async function addFirma(formData: FormData) {
   revalidatePath("/tablolar");
 }
 
+export async function updateFirma(id: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("firmalar")
+    .update({
+      ad: formData.get("ad") as string,
+      renk: (formData.get("renk") as string) || "#28694B",
+      is_tedarikci: formData.get("is_tedarikci") === "on",
+      is_musteri: formData.get("is_musteri") === "on",
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/firmalar");
+  revalidatePath(`/firmalar/${id}`);
+  revalidatePath("/tablolar");
+}
+
 export async function deleteFirma(id: string) {
   const supabase = await createClient();
   const { error } = await supabase
