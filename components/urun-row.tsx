@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { deleteUrun, updateUrun } from "@/lib/actions/urunler";
 import { Button, Input } from "@/components/ui";
-import { formatTL } from "@/lib/format";
 import type { Urun } from "@/lib/types";
 
 export function UrunRow({ urun }: { urun: Urun }) {
@@ -14,7 +13,7 @@ export function UrunRow({ urun }: { urun: Urun }) {
   if (editing) {
     return (
       <tr className="border-b border-border last:border-0 bg-bg-elev">
-        <td colSpan={6} className="py-3">
+        <td colSpan={4} className="py-3">
           <form
             ref={formRef}
             action={async (formData) => {
@@ -37,22 +36,6 @@ export function UrunRow({ urun }: { urun: Urun }) {
               defaultValue={urun.stok_adet}
               className="w-24"
               placeholder="Stok"
-            />
-            <Input
-              name="ortalama_maliyet"
-              type="number"
-              step="0.01"
-              defaultValue={urun.ortalama_maliyet}
-              className="w-24"
-              placeholder="Maliyet"
-            />
-            <Input
-              name="satis_fiyati"
-              type="number"
-              step="0.01"
-              defaultValue={urun.satis_fiyati}
-              className="w-24"
-              placeholder="Satış fiyatı"
             />
             <Input
               name="kritik_stok_esigi"
@@ -91,8 +74,6 @@ export function UrunRow({ urun }: { urun: Urun }) {
       <td className={`py-2.5 font-mono ${kritikMi ? "font-semibold text-orange" : ""}`}>
         {urun.stok_adet}
       </td>
-      <td className="py-2.5 font-mono">{formatTL(urun.ortalama_maliyet)}</td>
-      <td className="py-2.5 font-mono">{formatTL(urun.satis_fiyati)}</td>
       <td className="py-2.5 font-mono text-text-dim">{urun.kritik_stok_esigi}</td>
       <td className="py-2.5">
         <div className="flex items-center gap-3">

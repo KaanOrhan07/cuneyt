@@ -35,14 +35,6 @@ export function UrunForm() {
             <Input name="stok_adet" type="number" step="1" defaultValue={0} className="w-28" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Maliyet (₺)</Label>
-            <Input name="ortalama_maliyet" type="number" step="0.01" defaultValue={0} className="w-28" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>Satış Fiyatı (₺)</Label>
-            <Input name="satis_fiyati" type="number" step="0.01" defaultValue={0} className="w-28" />
-          </div>
-          <div className="flex flex-col gap-1.5">
             <Label>Kritik Stok Eşiği</Label>
             <Input name="kritik_stok_esigi" type="number" step="1" defaultValue={0} className="w-28" />
           </div>

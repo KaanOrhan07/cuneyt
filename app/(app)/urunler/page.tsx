@@ -27,7 +27,9 @@ export default async function UrunlerPage({
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-[22px] font-semibold">Ürünler / Stok</h1>
-          <p className="mt-0.5 text-[13px] text-text-dim">Stok adedi, maliyet ve satış fiyatlarını yönetin</p>
+          <p className="mt-0.5 text-[13px] text-text-dim">
+            Stok adedini yönetin — fiyatlar artık her siparişte ayrı ayrı girilir
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <ImportExcelButton tip="urun" />
@@ -37,8 +39,6 @@ export default async function UrunlerPage({
             rows={(urunler ?? []).map((u) => ({
               Ürün: u.ad,
               Stok: u.stok_adet,
-              "Ort. Maliyet": u.ortalama_maliyet,
-              "Satış Fiyatı": u.satis_fiyati,
               "Kritik Eşik": u.kritik_stok_esigi,
             }))}
           />
@@ -78,8 +78,6 @@ export default async function UrunlerPage({
             <tr className="border-b border-border text-[11px] uppercase tracking-wide text-text-dim">
               <th className="pb-2.5 text-left font-semibold">Ürün</th>
               <th className="pb-2.5 text-left font-semibold">Stok</th>
-              <th className="pb-2.5 text-left font-semibold">Ort. Maliyet</th>
-              <th className="pb-2.5 text-left font-semibold">Satış Fiyatı</th>
               <th className="pb-2.5 text-left font-semibold">Kritik Eşik</th>
               <th className="pb-2.5 text-left font-semibold" />
             </tr>
@@ -90,7 +88,7 @@ export default async function UrunlerPage({
             ))}
             {urunler?.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 text-text-dim">
+                <td colSpan={4} className="py-4 text-text-dim">
                   Ürün bulunamadı.
                 </td>
               </tr>

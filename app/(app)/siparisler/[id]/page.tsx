@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, StatusDot } from "@/components/ui";
 import { DurumSelect } from "@/components/durum-select";
 import { SiparisKalemSatiri } from "@/components/siparis-kalem-satiri";
-import { formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
+import { formatParaBirimi, formatTarih, formatTarihSaat } from "@/lib/format";
 import type { Firma, SiparisDurum, SiparisTip } from "@/lib/types";
 
 export default async function SiparisDetayPage({ params }: { params: Promise<{ id: string }> }) {
@@ -21,7 +21,7 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
 
   const { data: kalemler, error: kalemHata } = await supabase
     .from("siparis_kalemleri")
-    .select("id, adet, birim_fiyat, teslim_edilen_adet, urunler(ad)")
+    .select("id, adet, birim_fiyat, birim_maliyet, teslim_edilen_adet, urunler(ad)")
     .eq("siparis_id", id);
 
   const firma = siparis.firmalar as unknown as Firma;
@@ -29,11 +29,15 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
     id: string;
     adet: number;
     birim_fiyat: number;
+    birim_maliyet: number;
     teslim_edilen_adet: number;
     urunler: { ad: string } | null;
   }[];
 
+  const paraBirimi = siparis.para_birimi ?? "TL";
+  const fmt = (n: number) => formatParaBirimi(n, paraBirimi);
   const araToplam = rows.reduce((s, k) => s + k.adet * k.birim_fiyat, 0);
+  const toplamMaliyet = rows.reduce((s, k) => s + k.adet * k.birim_maliyet, 0);
   const kargoBedeli = siparis.kargo_bedeli ?? 0;
   const kdvTutari = (araToplam + kargoBedeli) * (siparis.kdv_orani / 100);
   const genelToplam = araToplam + kargoBedeli + kdvTutari;
@@ -98,6 +102,9 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
               <th className="pb-2.5 text-right font-semibold">Teslim Edilen</th>
               <th className="pb-2.5 text-right font-semibold">Kalan</th>
               <th className="pb-2.5 text-right font-semibold">Birim Fiyat</th>
+              {siparis.tip === "satis" && (
+                <th className="pb-2.5 text-right font-semibold">Maliyet (dahili)</th>
+              )}
               <th className="pb-2.5 text-right font-semibold">Tutar</th>
             </tr>
           </thead>
@@ -110,7 +117,10 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
                 urunAd={k.urunler?.ad ?? "—"}
                 adet={k.adet}
                 birimFiyat={k.birim_fiyat}
+                birimMaliyet={k.birim_maliyet}
                 teslimEdilenAdet={k.teslim_edilen_adet}
+                paraBirimi={paraBirimi}
+                tip={siparis.tip as SiparisTip}
               />
             ))}
           </tbody>
@@ -119,22 +129,28 @@ export default async function SiparisDetayPage({ params }: { params: Promise<{ i
         <div className="mt-4 flex flex-col items-end gap-1 text-[13px]">
           <div className="flex w-48 justify-between text-text-dim">
             <span>Ara Toplam</span>
-            <span className="font-mono">{formatTL(araToplam)}</span>
+            <span className="font-mono">{fmt(araToplam)}</span>
           </div>
           {kargoBedeli > 0 && (
             <div className="flex w-48 justify-between text-text-dim">
               <span>Kargo</span>
-              <span className="font-mono">{formatTL(kargoBedeli)}</span>
+              <span className="font-mono">{fmt(kargoBedeli)}</span>
             </div>
           )}
           <div className="flex w-48 justify-between text-text-dim">
             <span>KDV (%{siparis.kdv_orani})</span>
-            <span className="font-mono">{formatTL(kdvTutari)}</span>
+            <span className="font-mono">{fmt(kdvTutari)}</span>
           </div>
           <div className="flex w-48 justify-between border-t border-border pt-1 font-semibold">
             <span>Genel Toplam</span>
-            <span className="font-mono">{formatTL(genelToplam)}</span>
+            <span className="font-mono">{fmt(genelToplam)}</span>
           </div>
+          {siparis.tip === "satis" && (
+            <div className="mt-2 flex w-48 justify-between border-t border-border pt-1 text-text-dim">
+              <span>Kâr (dahili, tahmini)</span>
+              <span className="font-mono">{fmt(araToplam - toplamMaliyet)}</span>
+            </div>
+          )}
         </div>
 
         <p className="mt-3 text-[11.5px] text-text-dim">

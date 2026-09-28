@@ -49,6 +49,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     sonTeslimTarihi: siparis.son_teslim_tarihi,
     kdvOrani: siparis.kdv_orani,
     kargoBedeli: siparis.kargo_bedeli ?? 0,
+    paraBirimi: siparis.para_birimi ?? "TL",
     firmaAd: firma?.ad ?? "—",
     kalemler: rows.map((k) => ({
       urunAd: k.urunler?.ad ?? "—",

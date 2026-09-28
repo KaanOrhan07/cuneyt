@@ -21,13 +21,14 @@ export type SiparisPdfData = {
   sonTeslimTarihi: string | null;
   kdvOrani: number;
   kargoBedeli: number;
+  paraBirimi: string;
   firmaAd: string;
   kalemler: { urunAd: string; adet: number; teslimEdilenAdet: number; birimFiyat: number }[];
 };
 
 export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Array> {
   const M = SIPARIS_METIN[data.dil];
-  const tl = (n: number) => paraFormat(n, "TL", data.dil);
+  const tl = (n: number) => paraFormat(n, data.paraBirimi, data.dil);
   const [fontBytes, fontBoldBytes] = await Promise.all([
     fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Regular.ttf")),
     fs.readFile(path.join(process.cwd(), "lib/pdf/fonts/Inter-Bold.ttf")),

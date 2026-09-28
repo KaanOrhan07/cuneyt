@@ -41,8 +41,6 @@ export function ExcelImport() {
           ad: String(bul(r, "Ürün Adı", "Urun Adi", "Ad") ?? ""),
           fotograf_url: String(bul(r, "Fotoğraf URL", "Fotograf URL") ?? "") || undefined,
           stok_adet: sayiDegeri(bul(r, "Stok Adedi", "Stok")),
-          ortalama_maliyet: sayiDegeri(bul(r, "Ortalama Maliyet", "Maliyet")),
-          satis_fiyati: sayiDegeri(bul(r, "Satış Fiyatı", "Satis Fiyati")),
           kritik_stok_esigi: sayiDegeri(bul(r, "Kritik Stok Eşiği", "Kritik Esik")),
         }));
         const sonuc = await bulkImportUrunler(veri);

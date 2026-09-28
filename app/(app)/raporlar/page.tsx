@@ -9,9 +9,16 @@ type Filters = { baslangic?: string; bitis?: string };
 type KalemRow = {
   adet: number;
   birim_fiyat: number;
+  birim_maliyet: number;
   urun_id: string;
-  urunler: { ad: string; ortalama_maliyet: number } | null;
-  siparisler: { tip: "alis" | "satis"; tarih_saat: string; firma_id: string; firmalar: { ad: string } | null } | null;
+  urunler: { ad: string } | null;
+  siparisler: {
+    tip: "alis" | "satis";
+    tarih_saat: string;
+    firma_id: string;
+    para_birimi: string;
+    firmalar: { ad: string } | null;
+  } | null;
 };
 
 export default async function RaporlarPage({
@@ -35,9 +42,10 @@ export default async function RaporlarPage({
   const { data } = await supabase
     .from("siparis_kalemleri")
     .select(
-      "adet, birim_fiyat, urun_id, urunler(ad, ortalama_maliyet), siparisler!inner(tip, tarih_saat, firma_id, durum, firmalar(ad))",
+      "adet, birim_fiyat, birim_maliyet, urun_id, urunler(ad), siparisler!inner(tip, tarih_saat, firma_id, durum, para_birimi, firmalar(ad))",
     )
     .neq("siparisler.durum", "iptal_edildi")
+    .eq("siparisler.para_birimi", "TL")
     .gte("siparisler.tarih_saat", baslangic.toISOString())
     .lte("siparisler.tarih_saat", bitis.toISOString());
 
@@ -45,7 +53,7 @@ export default async function RaporlarPage({
   const satisKalemleri = kalemler.filter((k) => k.siparisler?.tip === "satis");
 
   const ciro = satisKalemleri.reduce((s, k) => s + k.adet * k.birim_fiyat, 0);
-  const maliyet = satisKalemleri.reduce((s, k) => s + k.adet * (k.urunler?.ortalama_maliyet ?? 0), 0);
+  const maliyet = satisKalemleri.reduce((s, k) => s + k.adet * k.birim_maliyet, 0);
   const kar = ciro - maliyet;
 
   const { count: siparisSayisi } = await supabase
@@ -62,7 +70,7 @@ export default async function RaporlarPage({
     const mevcut = urunMap.get(k.urun_id) ?? { ad, adet: 0, tutar: 0, kar: 0 };
     mevcut.adet += k.adet;
     mevcut.tutar += k.adet * k.birim_fiyat;
-    mevcut.kar += k.adet * (k.birim_fiyat - (k.urunler?.ortalama_maliyet ?? 0));
+    mevcut.kar += k.adet * (k.birim_fiyat - k.birim_maliyet);
     urunMap.set(k.urun_id, mevcut);
   }
   const urunOzetleri = [...urunMap.values()].sort((a, b) => b.tutar - a.tutar);
@@ -90,7 +98,7 @@ export default async function RaporlarPage({
         <div>
           <h1 className="font-display text-[22px] font-semibold">Raporlar</h1>
           <p className="mt-0.5 text-[13px] text-text-dim">
-            {formatTarih(baslangic)} – {formatTarih(bitisGunBaslangici)} aralığı
+            {formatTarih(baslangic)} – {formatTarih(bitisGunBaslangici)} aralığı · yalnızca TL siparişler
           </p>
         </div>
         <form className="flex items-end gap-2.5">
@@ -113,8 +121,8 @@ export default async function RaporlarPage({
       </div>
 
       <div className="mb-5 grid grid-cols-3 gap-3.5">
-        <StatCard label="Ciro" value={formatTL(ciro)} />
-        <StatCard label="Kâr" value={formatTL(kar)} />
+        <StatCard label="Ciro (TL)" value={formatTL(ciro)} />
+        <StatCard label="Kâr (TL)" value={formatTL(kar)} />
         <StatCard label="Sipariş Sayısı" value={siparisSayisi ?? 0} />
       </div>
 

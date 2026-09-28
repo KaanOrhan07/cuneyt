@@ -10,7 +10,7 @@ import { bulKolon, evetMi, sayiDegeri } from "@/lib/excel-import-helpers";
 type Tip = "urun" | "firma";
 
 const SABLON_BASLIKLARI: Record<Tip, string[]> = {
-  urun: ["Ürün Adı", "Fotoğraf URL", "Stok Adedi", "Ortalama Maliyet", "Satış Fiyatı", "Kritik Stok Eşiği"],
+  urun: ["Ürün Adı", "Fotoğraf URL", "Stok Adedi", "Kritik Stok Eşiği"],
   firma: ["Firma Adı", "Renk (hex)", "Tedarikçi (Evet/Hayır)", "Müşteri (Evet/Hayır)"],
 };
 
@@ -59,8 +59,6 @@ export function ImportExcelButton({ tip }: { tip: Tip }) {
           ad: String(bulKolon(r, "Ürün Adı", "Urun Adi", "Ad") ?? ""),
           fotograf_url: String(bulKolon(r, "Fotoğraf URL", "Fotograf URL") ?? "") || undefined,
           stok_adet: sayiDegeri(bulKolon(r, "Stok Adedi", "Stok")),
-          ortalama_maliyet: sayiDegeri(bulKolon(r, "Ortalama Maliyet", "Maliyet")),
-          satis_fiyati: sayiDegeri(bulKolon(r, "Satış Fiyatı", "Satis Fiyati")),
           kritik_stok_esigi: sayiDegeri(bulKolon(r, "Kritik Stok Eşiği", "Kritik Esik")),
         }));
         const sonuc = await bulkImportUrunler(veri);

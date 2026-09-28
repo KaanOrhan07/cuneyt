@@ -3,10 +3,10 @@
 import { useActionState, useMemo, useState } from "react";
 import { createSiparis, type SiparisState } from "@/lib/actions/siparisler";
 import { Button, Input, Label, Select } from "@/components/ui";
-import { formatTL } from "@/lib/format";
+import { formatParaBirimi, PARA_BIRIMLERI, paraBirimiSembol } from "@/lib/format";
 import type { Firma, Urun } from "@/lib/types";
 
-type Row = { urun_id: string; adet: string; birim_fiyat: string };
+type Row = { urun_id: string; adet: string; birim_fiyat: string; birim_maliyet: string };
 
 export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler: Urun[] }) {
   const [state, formAction, pending] = useActionState<SiparisState, FormData>(
@@ -14,7 +14,9 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
     undefined,
   );
   const [tip, setTip] = useState<"alis" | "satis">("alis");
-  const [rows, setRows] = useState<Row[]>([{ urun_id: "", adet: "", birim_fiyat: "" }]);
+  const [paraBirimi, setParaBirimi] = useState("TL");
+  const [rows, setRows] = useState<Row[]>([{ urun_id: "", adet: "", birim_fiyat: "", birim_maliyet: "" }]);
+  const fmt = (n: number) => formatParaBirimi(n, paraBirimi);
 
   const urunMap = useMemo(() => new Map(urunler.map((u) => [u.id, u])), [urunler]);
 
@@ -54,6 +56,7 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
                 urun_id: r.urun_id,
                 adet: Number(r.adet),
                 birim_fiyat: Number(r.birim_fiyat),
+                birim_maliyet: Number(r.birim_maliyet) || 0,
               })),
           ),
         );
@@ -80,6 +83,16 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
           <Select name="tip" value={tip} onChange={(e) => setTip(e.target.value as "alis" | "satis")}>
             <option value="alis">Alış (gelen)</option>
             <option value="satis">Satış (giden)</option>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label>Para Birimi</Label>
+          <Select name="para_birimi" value={paraBirimi} onChange={(e) => setParaBirimi(e.target.value)}>
+            {PARA_BIRIMLERI.map((pb) => (
+              <option key={pb} value={pb}>
+                {pb} ({paraBirimiSembol(pb)})
+              </option>
+            ))}
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
@@ -112,7 +125,7 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Kargo Bedeli (₺)</Label>
+          <Label>Kargo Bedeli ({paraBirimiSembol(paraBirimi)})</Label>
           <Input
             type="number"
             step="0.01"
@@ -150,11 +163,21 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
             <Input
               type="number"
               step="0.01"
-              placeholder="Birim fiyat"
+              placeholder={tip === "satis" ? "Satış fiyatı" : "Birim fiyat"}
               value={row.birim_fiyat}
               onChange={(e) => updateRow(i, { birim_fiyat: e.target.value })}
               className="w-32"
             />
+            {tip === "satis" && (
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Maliyet (dahili)"
+                value={row.birim_maliyet}
+                onChange={(e) => updateRow(i, { birim_maliyet: e.target.value })}
+                className="w-32"
+              />
+            )}
             {rows.length > 1 && (
               <button
                 type="button"
@@ -168,31 +191,38 @@ export function SiparisForm({ firmalar, urunler }: { firmalar: Firma[]; urunler:
         ))}
         <button
           type="button"
-          onClick={() => setRows((rs) => [...rs, { urun_id: "", adet: "", birim_fiyat: "" }])}
+          onClick={() =>
+            setRows((rs) => [...rs, { urun_id: "", adet: "", birim_fiyat: "", birim_maliyet: "" }])
+          }
           className="self-start text-[12.5px] font-medium text-green"
         >
           + Ürün satırı ekle
         </button>
+        {tip === "satis" && (
+          <p className="text-[11.5px] text-text-dim">
+            Maliyet alanı sadece uygulama içinde görünür — sipariş/teklif PDF&apos;lerine yansımaz.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col items-end gap-1 rounded-[10px] border border-border bg-bg-elev px-4 py-3 text-[13px]">
         <div className="flex w-48 justify-between text-text-dim">
           <span>Ara Toplam</span>
-          <span className="font-mono">{formatTL(araToplam)}</span>
+          <span className="font-mono">{fmt(araToplam)}</span>
         </div>
         {kargo > 0 && (
           <div className="flex w-48 justify-between text-text-dim">
             <span>Kargo</span>
-            <span className="font-mono">{formatTL(kargo)}</span>
+            <span className="font-mono">{fmt(kargo)}</span>
           </div>
         )}
         <div className="flex w-48 justify-between text-text-dim">
           <span>KDV (%{kdvOrani || 0})</span>
-          <span className="font-mono">{formatTL(kdvTutari)}</span>
+          <span className="font-mono">{fmt(kdvTutari)}</span>
         </div>
         <div className="flex w-48 justify-between border-t border-border pt-1 font-semibold">
           <span>Genel Toplam</span>
-          <span className="font-mono">{formatTL(genelToplam)}</span>
+          <span className="font-mono">{fmt(genelToplam)}</span>
         </div>
       </div>
 

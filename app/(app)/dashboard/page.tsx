@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, StatCard, StatusDot } from "@/components/ui";
-import { formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
+import { formatParaBirimi, formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
 import { istanbulDayKey, istanbulDaysAgo, istanbulMidnightUTC, istanbulToday } from "@/lib/tr-time";
 import type { Firma, SiparisDurum, SiparisTip, Urun } from "@/lib/types";
 
@@ -24,8 +24,9 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from("siparis_kalemleri")
-      .select("adet, birim_fiyat, urunler(ortalama_maliyet), siparisler!inner(tip, tarih_saat, durum)")
+      .select("adet, birim_fiyat, birim_maliyet, siparisler!inner(tip, tarih_saat, durum, para_birimi)")
       .eq("siparisler.tip", "satis")
+      .eq("siparisler.para_birimi", "TL")
       .neq("siparisler.durum", "iptal_edildi")
       .gte("siparisler.tarih_saat", ayBasi),
     supabase.from("siparisler").select("tip").not("durum", "in", "(teslim_edildi,iptal_edildi)"),
@@ -37,23 +38,22 @@ export default async function DashboardPage() {
     supabase
       .from("siparisler")
       .select("tip, tarih_saat, siparis_kalemleri(adet, birim_fiyat)")
+      .eq("para_birimi", "TL")
       .neq("durum", "iptal_edildi")
       .gte("tarih_saat", yediGunOnce.toISOString()),
     supabase
       .from("siparisler")
-      .select("id, tip, durum, tarih_saat, firmalar(ad, renk), siparis_kalemleri(adet, birim_fiyat, urunler(ad))")
+      .select(
+        "id, tip, durum, tarih_saat, para_birimi, firmalar(ad, renk), siparis_kalemleri(adet, birim_fiyat, urunler(ad))",
+      )
       .order("tarih_saat", { ascending: false })
       .limit(5),
   ]);
 
-  type SatisKalem = {
-    adet: number;
-    birim_fiyat: number;
-    urunler: { ortalama_maliyet: number } | null;
-  };
+  type SatisKalem = { adet: number; birim_fiyat: number; birim_maliyet: number };
   const kalemler = (buAySatisKalemleri as unknown as SatisKalem[]) ?? [];
   const ciro = kalemler.reduce((sum, k) => sum + k.adet * k.birim_fiyat, 0);
-  const maliyet = kalemler.reduce((sum, k) => sum + k.adet * (k.urunler?.ortalama_maliyet ?? 0), 0);
+  const maliyet = kalemler.reduce((sum, k) => sum + k.adet * k.birim_maliyet, 0);
   const kar = ciro - maliyet;
 
   const acikAlis = acikSiparisler?.filter((s) => s.tip === "alis").length ?? 0;
@@ -100,8 +100,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mb-5 grid grid-cols-4 gap-3.5">
-        <StatCard label="Bu Ayki Ciro" value={formatTL(ciro)} />
-        <StatCard label="Kâr" value={formatTL(kar)} />
+        <StatCard label="Bu Ayki Ciro (TL)" value={formatTL(ciro)} />
+        <StatCard label="Kâr (TL)" value={formatTL(kar)} />
         <StatCard
           label="Açık Sipariş"
           value={acikAlis + acikSatis}
@@ -195,7 +195,7 @@ export default async function DashboardPage() {
                     <Badge tip={s.tip as SiparisTip} />
                   </td>
                   <td className="py-2.5">{kalemler.map((k) => k.urunler?.ad).join(", ")}</td>
-                  <td className="py-2.5 font-mono">{formatTL(toplam)}</td>
+                  <td className="py-2.5 font-mono">{formatParaBirimi(toplam, s.para_birimi)}</td>
                   <td className="py-2.5">
                     <StatusDot durum={s.durum as SiparisDurum} />
                   </td>

@@ -10,8 +10,6 @@ export async function addUrun(formData: FormData) {
     ad: formData.get("ad") as string,
     fotograf_url: (formData.get("fotograf_url") as string) || null,
     stok_adet: Number(formData.get("stok_adet") ?? 0),
-    ortalama_maliyet: Number(formData.get("ortalama_maliyet") ?? 0),
-    satis_fiyati: Number(formData.get("satis_fiyati") ?? 0),
     kritik_stok_esigi: Number(formData.get("kritik_stok_esigi") ?? 0),
   });
 
@@ -29,8 +27,6 @@ export async function updateUrun(id: string, formData: FormData) {
       ad: formData.get("ad") as string,
       fotograf_url: (formData.get("fotograf_url") as string) || null,
       stok_adet: Number(formData.get("stok_adet") ?? 0),
-      ortalama_maliyet: Number(formData.get("ortalama_maliyet") ?? 0),
-      satis_fiyati: Number(formData.get("satis_fiyati") ?? 0),
       kritik_stok_esigi: Number(formData.get("kritik_stok_esigi") ?? 0),
     })
     .eq("id", id);
@@ -69,8 +65,6 @@ export type UrunImportSatiri = {
   ad: string;
   fotograf_url?: string | null;
   stok_adet?: number;
-  ortalama_maliyet?: number;
-  satis_fiyati?: number;
   kritik_stok_esigi?: number;
 };
 
@@ -84,8 +78,6 @@ export async function bulkImportUrunler(rows: UrunImportSatiri[]) {
       ad: r.ad.trim(),
       fotograf_url: r.fotograf_url || null,
       stok_adet: r.stok_adet ?? 0,
-      ortalama_maliyet: r.ortalama_maliyet ?? 0,
-      satis_fiyati: r.satis_fiyati ?? 0,
       kritik_stok_esigi: r.kritik_stok_esigi ?? 0,
     })),
   );
@@ -99,7 +91,7 @@ export async function bulkImportUrunler(rows: UrunImportSatiri[]) {
 
 export async function updateUrunField(
   id: string,
-  field: "ad" | "stok_adet" | "ortalama_maliyet" | "satis_fiyati" | "kritik_stok_esigi",
+  field: "ad" | "stok_adet" | "kritik_stok_esigi",
   value: string | number,
 ) {
   const supabase = await createClient();

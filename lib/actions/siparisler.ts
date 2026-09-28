@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { SiparisDurum, SiparisTip } from "@/lib/types";
 
-export type KalemInput = { urun_id: string; adet: number; birim_fiyat: number };
+export type KalemInput = {
+  urun_id: string;
+  adet: number;
+  birim_fiyat: number;
+  birim_maliyet?: number;
+};
 export type SiparisState = { error?: string } | undefined;
 
 export async function createSiparis(
@@ -21,6 +26,7 @@ export async function createSiparis(
   const siparis_no = (formData.get("siparis_no") as string) || null;
   const kdv_orani = Number(formData.get("kdv_orani") ?? 20);
   const kargo_bedeli = Number(formData.get("kargo_bedeli") ?? 0) || 0;
+  const para_birimi = (formData.get("para_birimi") as string) || "TL";
   const kalemlerRaw = formData.get("kalemler") as string;
 
   let kalemler: KalemInput[] = [];
@@ -43,6 +49,7 @@ export async function createSiparis(
       son_teslim_tarihi,
       siparis_no,
       kdv_orani,
+      para_birimi,
       ...(kargo_bedeli > 0 ? { kargo_bedeli } : {}),
     })
     .select("id")
@@ -58,6 +65,7 @@ export async function createSiparis(
       urun_id: k.urun_id,
       adet: k.adet,
       birim_fiyat: k.birim_fiyat,
+      birim_maliyet: k.birim_maliyet ?? 0,
     })),
   );
 
@@ -147,4 +155,14 @@ export async function updateTeslimEdilenAdet(kalemId: string, siparisId: string,
   revalidatePath("/siparisler");
   revalidatePath(`/siparisler/${siparisId}`);
   revalidatePath("/tablolar");
+}
+
+export async function updateBirimMaliyet(kalemId: string, siparisId: string, maliyet: number) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("siparis_kalemleri")
+    .update({ birim_maliyet: maliyet })
+    .eq("id", kalemId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/siparisler/${siparisId}`);
 }

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge, Button, Panel, Select } from "@/components/ui";
 import { DurumSelect } from "@/components/durum-select";
 import { SiparisDeleteButton } from "@/components/siparis-delete-button";
-import { formatTL, formatTarih, formatTarihSaat } from "@/lib/format";
+import { formatParaBirimi, formatTarih, formatTarihSaat } from "@/lib/format";
 import type { Firma, SiparisDurum, SiparisTip, Urun } from "@/lib/types";
 
 type Filters = {
@@ -26,7 +26,7 @@ export default async function SiparislerPage({
   let query = supabase
     .from("siparisler")
     .select(
-      "id, tip, durum, tarih_saat, son_teslim_tarihi, siparis_no, firmalar(id, ad, renk), siparis_kalemleri(adet, birim_fiyat, urun_id, urunler(ad))",
+      "id, tip, durum, tarih_saat, son_teslim_tarihi, siparis_no, para_birimi, firmalar(id, ad, renk), siparis_kalemleri(adet, birim_fiyat, urun_id, urunler(ad))",
     )
     .order("tarih_saat", { ascending: false });
 
@@ -162,7 +162,7 @@ export default async function SiparislerPage({
                     <Badge tip={s.tip as SiparisTip} />
                   </td>
                   <td className="py-2.5">{kalemler.map((k) => k.urunler?.ad).join(", ")}</td>
-                  <td className="py-2.5 font-mono">{formatTL(toplam)}</td>
+                  <td className="py-2.5 font-mono">{formatParaBirimi(toplam, s.para_birimi)}</td>
                   <td className={`py-2.5 font-mono ${teslimGecti ? "font-semibold text-orange" : "text-text-dim"}`}>
                     {s.son_teslim_tarihi ? formatTarih(s.son_teslim_tarihi) : "—"}
                   </td>

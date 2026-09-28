@@ -57,8 +57,6 @@ export function UrunlerTablosu({ urunler }: { urunler: Urun[] }) {
           rows={rows.map((u) => ({
             Ürün: u.ad,
             Stok: u.stok_adet,
-            "Ort. Maliyet": u.ortalama_maliyet,
-            "Satış Fiyatı": u.satis_fiyati,
             "Kritik Eşik": u.kritik_stok_esigi,
           }))}
         />
@@ -83,12 +81,6 @@ export function UrunlerTablosu({ urunler }: { urunler: Urun[] }) {
               </th>
               <th className={XL_TH}>
                 <SortableHeader label="Stok" active={sortKey === "stok_adet"} direction={sortDir} onClick={() => toggleSort("stok_adet")} align="right" />
-              </th>
-              <th className={XL_TH}>
-                <SortableHeader label="Ort. Maliyet" active={sortKey === "ortalama_maliyet"} direction={sortDir} onClick={() => toggleSort("ortalama_maliyet")} align="right" />
-              </th>
-              <th className={XL_TH}>
-                <SortableHeader label="Satış Fiyatı" active={sortKey === "satis_fiyati"} direction={sortDir} onClick={() => toggleSort("satis_fiyati")} align="right" />
               </th>
               <th className={XL_TH}>
                 <SortableHeader label="Kritik Eşik" active={sortKey === "kritik_stok_esigi"} direction={sortDir} onClick={() => toggleSort("kritik_stok_esigi")} align="right" />
@@ -117,22 +109,6 @@ export function UrunlerTablosu({ urunler }: { urunler: Urun[] }) {
                 </td>
                 <td className={XL_TD}>
                   <EditableCell
-                    value={u.ortalama_maliyet}
-                    type="number"
-                    align="right"
-                    onSave={(v) => updateUrunField(u.id, "ortalama_maliyet", Number(v))}
-                  />
-                </td>
-                <td className={XL_TD}>
-                  <EditableCell
-                    value={u.satis_fiyati}
-                    type="number"
-                    align="right"
-                    onSave={(v) => updateUrunField(u.id, "satis_fiyati", Number(v))}
-                  />
-                </td>
-                <td className={XL_TD}>
-                  <EditableCell
                     value={u.kritik_stok_esigi}
                     type="number"
                     align="right"
@@ -143,7 +119,7 @@ export function UrunlerTablosu({ urunler }: { urunler: Urun[] }) {
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="border border-border px-3 py-4 text-center text-text-dim">
+                <td colSpan={5} className="border border-border px-3 py-4 text-center text-text-dim">
                   Ürün yok.
                 </td>
               </tr>
@@ -156,8 +132,6 @@ export function UrunlerTablosu({ urunler }: { urunler: Urun[] }) {
                 <td className={XL_TD} />
                 <td className={`${XL_TD} px-1.5 py-1`}>Toplam ({rows.length} ürün)</td>
                 <td className={`${XL_TD} px-1.5 py-1 text-right font-mono`}>{toplamStok}</td>
-                <td className={XL_TD} />
-                <td className={XL_TD} />
                 <td className={XL_TD} />
               </tr>
             </tfoot>

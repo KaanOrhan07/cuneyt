@@ -37,6 +37,7 @@ export type Siparis = {
   siparis_no: string | null;
   kdv_orani: number;
   kargo_bedeli: number;
+  para_birimi: string;
   created_at: string;
 };
 
@@ -46,6 +47,7 @@ export type SiparisKalemi = {
   urun_id: string;
   adet: number;
   birim_fiyat: number;
+  birim_maliyet: number;
   teslim_edilen_adet: number;
   created_at: string;
 };
