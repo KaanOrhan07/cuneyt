@@ -3,7 +3,6 @@ import fontkit from "@pdf-lib/fontkit";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { SIPARIS_METIN, paraFormat, tarihFormat, yuzdeFormat, type Dil } from "./i18n";
-import { DIGIO_URL, baglantiEkle } from "./ortak";
 
 const YESIL = rgb(0.157, 0.412, 0.294); // #28694B
 const GRI = rgb(0.431, 0.431, 0.451); // #6E6E73
@@ -193,10 +192,6 @@ export async function generateSiparisPdf(data: SiparisPdfData): Promise<Uint8Arr
   y -= 18;
   yaz(M.genelToplam, ozetX, y, { boyut: 12, renk: YESIL, kalin: true });
   yaz(tl(genelToplam), sagMargin, y, { boyut: 12, renk: YESIL, hizalama: "sag", kalin: true });
-
-  const digioMetin = "Created by Digio Medya ve Yazılım";
-  sayfa.drawText(digioMetin, { x: solMargin, y: 30, size: 8, font, color: GRI });
-  baglantiEkle(pdf, sayfa, DIGIO_URL, solMargin, 28, font.widthOfTextAtSize(digioMetin, 8), 10);
 
   return pdf.save();
 }

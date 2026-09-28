@@ -1,5 +1,5 @@
 import { type PDFPage } from "pdf-lib";
-import { A4, DIGIO_URL, RENK, baglantiEkle, belgeAc, gorseliGom, type Renk } from "./ortak";
+import { A4, RENK, belgeAc, gorseliGom, type Renk } from "./ortak";
 import { TEKLIF_METIN, paraFormat, tarihFormat, yuzdeFormat, type Dil } from "./i18n";
 
 const ALT_SINIR = 90;
@@ -316,10 +316,6 @@ export async function generateTeklifPdf(data: TeklifPdfData): Promise<Uint8Array
     y -= 13;
     coklusatirYaz(data.notlar, solMargin, y, sagMargin - solMargin, 9);
   }
-
-  const digioMetin = "Created by Digio Medya ve Yazılım";
-  sayfa.drawText(digioMetin, { x: solMargin, y: 30, size: 8, font, color: RENK.GRI });
-  baglantiEkle(pdf, sayfa, DIGIO_URL, solMargin, 28, font.widthOfTextAtSize(digioMetin, 8), 10);
 
   return pdf.save();
 }
