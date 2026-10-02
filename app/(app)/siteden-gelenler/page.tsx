@@ -50,7 +50,8 @@ export default async function SitedenGelenlerPage({ searchParams }: { searchPara
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "https";
-  const webhookUrl = `${proto}://${host}/api/entegrasyon/webhook`;
+  const taban = process.env.ENTEGRASYON_PUBLIC_URL?.trim().replace(/\/+$/, "") || `${proto}://${host}`;
+  const webhookUrl = `${taban}/api/entegrasyon/webhook`;
 
   const apiHazir = Boolean(process.env.SITE_API_TABAN_URL && process.env.SITE_API_ANAHTARI);
   const kurulum = [
@@ -84,6 +85,10 @@ export default async function SitedenGelenlerPage({ searchParams }: { searchPara
           <div>
             <div className="text-[11px] uppercase tracking-wide text-text-dim">Webhook adresi (sitenin Admin → Entegrasyonlar bölümüne girin)</div>
             <code className="mt-1 block break-all rounded-lg bg-bg-elev px-3 py-2 text-[12.5px]">{webhookUrl}</code>
+            <p className="mt-1 text-[11.5px] text-text-dim">
+              Adres herkese açık olmalı: Vercel girişi (Deployment Protection) arkasındaki alan adları (ör. *-digio.vercel.app)
+              webhook&apos;u engeller. Gerekirse <code>ENTEGRASYON_PUBLIC_URL</code> ortam değişkeniyle doğru adresi sabitleyin.
+            </p>
           </div>
           <div>
             <div className="text-[11px] uppercase tracking-wide text-text-dim">Ek başlık ve olaylar</div>
