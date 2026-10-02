@@ -1,10 +1,11 @@
 import { Sidebar } from "@/components/sidebar";
+import { YeniGelenBildirimi } from "@/components/yeni-gelen-bildirimi";
 import { logout } from "@/lib/actions/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const [{ data: urunler }, { data: gecikenler }, { count: siteBekleyen }] = await Promise.all([
+  const [{ data: urunler }, { data: gecikenler }, { count: siteBekleyen }, { data: siteSon }] = await Promise.all([
     supabase.from("urunler").select("stok_adet, kritik_stok_esigi").is("deleted_at", null),
     supabase
       .from("siparisler")
@@ -13,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .not("durum", "in", "(teslim_edildi,iptal_edildi)")
       .lt("son_teslim_tarihi", new Date().toISOString()),
     supabase.from("site_gelenler").select("id", { count: "exact", head: true }).eq("durum", "beklemede"),
+    supabase.from("site_gelenler").select("created_at").order("created_at", { ascending: false }).limit(1),
   ]);
   const kritikStokSayisi =
     urunler?.filter((u) => u.stok_adet <= u.kritik_stok_esigi).length ?? 0;
@@ -38,6 +40,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <main className="min-w-0 flex-1 px-8 py-7">{children}</main>
       </div>
+      <YeniGelenBildirimi baslangicSon={siteSon?.[0]?.created_at ?? null} />
     </div>
   );
 }
