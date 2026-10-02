@@ -12,6 +12,7 @@ const IMZA_BASLIKLARI = [
   "x-webhook-signature",
   "x-hub-signature-256",
   "x-ck-signature",
+  "x-cosmo-signature",
 ];
 
 function esitMi(a: string, b: string) {
@@ -70,16 +71,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Geçersiz JSON" }, { status: 400 });
   }
 
-  const olay =
+  const govdeOlayi =
     typeof govde === "object" && govde !== null
-      ? String(
-          (govde as Record<string, unknown>).event ??
-            (govde as Record<string, unknown>).type ??
-            (govde as Record<string, unknown>).event_type ??
-            request.headers.get("x-event") ??
-            "",
-        ) || null
+      ? ((govde as Record<string, unknown>).event ??
+        (govde as Record<string, unknown>).type ??
+        (govde as Record<string, unknown>).event_type)
       : null;
+  const olay =
+    (govdeOlayi ? String(govdeOlayi) : null) ??
+    request.headers.get("x-cosmo-event") ??
+    request.headers.get("x-event");
 
   const tip = olayTipi(olay);
   if (!tip) {
