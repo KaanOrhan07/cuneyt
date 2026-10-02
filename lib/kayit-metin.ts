@@ -12,6 +12,7 @@ export const MODUL_ETIKET: Record<string, string> = {
   satin_almalar: "Satın Alma (Tedarik)",
   sirket_profili: "Şirket Profili",
   ekip_uyeleri: "Ekip Üyesi",
+  site_gelenler: "Siteden Gelen",
   yedek: "Yedek",
 };
 

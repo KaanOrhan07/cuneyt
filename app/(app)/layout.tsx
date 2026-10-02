@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const [{ data: urunler }, { data: gecikenler }] = await Promise.all([
+  const [{ data: urunler }, { data: gecikenler }, { count: siteBekleyen }] = await Promise.all([
     supabase.from("urunler").select("stok_adet, kritik_stok_esigi").is("deleted_at", null),
     supabase
       .from("siparisler")
@@ -12,6 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       .not("son_teslim_tarihi", "is", null)
       .not("durum", "in", "(teslim_edildi,iptal_edildi)")
       .lt("son_teslim_tarihi", new Date().toISOString()),
+    supabase.from("site_gelenler").select("id", { count: "exact", head: true }).eq("durum", "beklemede"),
   ]);
   const kritikStokSayisi =
     urunler?.filter((u) => u.stok_adet <= u.kritik_stok_esigi).length ?? 0;
@@ -19,7 +20,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="grid min-h-screen grid-cols-[240px_1fr]">
-      <Sidebar kritikStokSayisi={kritikStokSayisi} gecikenTeslimatSayisi={gecikenTeslimatSayisi} />
+      <Sidebar
+        kritikStokSayisi={kritikStokSayisi}
+        gecikenTeslimatSayisi={gecikenTeslimatSayisi}
+        siteBekleyenSayisi={siteBekleyen ?? 0}
+      />
       <div className="flex min-w-0 flex-col">
         <div className="flex justify-end border-b border-border px-8 py-3">
           <form action={logout}>

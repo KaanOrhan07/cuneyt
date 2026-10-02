@@ -7,6 +7,7 @@ import { Footer } from "./footer";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/siteden-gelenler", label: "Siteden Gelenler" },
   { href: "/firmalar", label: "Firmalar" },
   { href: "/siparisler", label: "Siparişler" },
   { href: "/teklifler", label: "Satış Teklifleri" },
@@ -26,14 +27,17 @@ const NAV_ITEMS = [
 export function Sidebar({
   kritikStokSayisi = 0,
   gecikenTeslimatSayisi = 0,
+  siteBekleyenSayisi = 0,
 }: {
   kritikStokSayisi?: number;
   gecikenTeslimatSayisi?: number;
+  siteBekleyenSayisi?: number;
 }) {
   const pathname = usePathname();
   const rozetler: Record<string, number> = {
     "/urunler": kritikStokSayisi,
     "/teslimatlar": gecikenTeslimatSayisi,
+    "/siteden-gelenler": siteBekleyenSayisi,
   };
 
   return (

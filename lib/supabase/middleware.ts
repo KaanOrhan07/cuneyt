@@ -3,7 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/signup"];
 
+// Siteden gelen webhook'lar oturum çerezi taşımaz; kendi anahtar/imza doğrulamasını route içinde yapar.
+const OTURUMSUZ_YOLLAR = ["/api/entegrasyon/webhook"];
+
 export async function updateSession(request: NextRequest) {
+  if (OTURUMSUZ_YOLLAR.includes(request.nextUrl.pathname)) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

@@ -205,6 +205,37 @@ export type SatinAlmaKalemi = {
   birim_fiyat: number;
 };
 
+export type GelenTip = "siparis" | "teklif";
+export type GelenDurum = "beklemede" | "onaylandi" | "reddedildi";
+export type GelenEpostaDurumu = "gonderildi" | "hata" | "ayarlanmamis" | "eposta-yok";
+
+export type GelenKalem = { ad: string; adet: number; birim_fiyat: number | null };
+
+export type SiteGelen = {
+  id: string;
+  tip: GelenTip;
+  dis_id: string;
+  dis_no: string | null;
+  durum: GelenDurum;
+  musteri_ad: string | null;
+  musteri_firma: string | null;
+  musteri_eposta: string | null;
+  musteri_telefon: string | null;
+  toplam: number | null;
+  para_birimi: string;
+  kalemler: GelenKalem[];
+  notlar: string | null;
+  ham: unknown;
+  dis_olusturma: string | null;
+  dis_guncelleme: string | null;
+  onay_tarihi: string | null;
+  onaylayan: string | null;
+  eposta_durumu: GelenEpostaDurumu | null;
+  eposta_hata: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type IslemKaydi = {
   id: string;
   created_at: string;
