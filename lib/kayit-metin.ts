@@ -13,6 +13,7 @@ export const MODUL_ETIKET: Record<string, string> = {
   sirket_profili: "Şirket Profili",
   ekip_uyeleri: "Ekip Üyesi",
   site_gelenler: "Siteden Gelen",
+  entegrasyon: "Entegrasyon (Webhook)",
   yedek: "Yedek",
 };
 
@@ -79,6 +80,25 @@ export type KayitMetni = { islem: string; ton: "green" | "orange" | "gray"; ozet
 
 export function kayitMetni(k: IslemKaydi): KayitMetni {
   const detay = (k.detay ?? {}) as Record<string, unknown>;
+
+  if (k.modul === "entegrasyon") {
+    const sonuc = typeof detay.sonuc === "string" ? detay.sonuc : "";
+    const etiket =
+      sonuc === "kaydedildi"
+        ? "kaydedildi"
+        : sonuc === "yoksayildi"
+          ? "yoksayıldı (tanınmayan/test olayı)"
+          : sonuc === "kimlik-yok"
+            ? "kimlik alanı bulunamadı"
+            : sonuc === "gecersiz-json"
+              ? "geçersiz JSON"
+              : sonuc;
+    return {
+      islem: "Webhook alındı",
+      ton: sonuc === "kaydedildi" ? "green" : sonuc === "yoksayildi" ? "gray" : "orange",
+      ozet: `${k.baslik ?? "—"} · ${etiket}`,
+    };
+  }
 
   if (k.modul === "yedek") {
     return {

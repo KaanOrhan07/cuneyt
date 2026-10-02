@@ -5,6 +5,7 @@ import { Panel } from "@/components/ui";
 import { SiteGelenKarti } from "@/components/site-gelen-karti";
 import { SitedenCekButonu } from "@/components/siteden-cek-butonu";
 import { epostaYapilandirildiMi } from "@/lib/eposta";
+import { formatTarihSaat } from "@/lib/format";
 import type { SiteGelen } from "@/lib/types";
 
 type Filters = { tip?: string; durum?: string };
@@ -38,9 +39,15 @@ export default async function SitedenGelenlerPage({ searchParams }: { searchPara
   if (tip === "teklif" || tip === "siparis") query = query.eq("tip", tip);
   if (durum !== "hepsi") query = query.eq("durum", durum === "onaylandi" || durum === "reddedildi" ? durum : "beklemede");
 
-  const [{ data, error }, { data: bekleyenler }] = await Promise.all([
+  const [{ data, error }, { data: bekleyenler }, { data: cagrilar }] = await Promise.all([
     query,
     supabase.from("site_gelenler").select("tip").eq("durum", "beklemede"),
+    supabase
+      .from("islem_kayitlari")
+      .select("id, created_at, baslik, detay")
+      .eq("modul", "entegrasyon")
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
 
   const kayitlar = (data ?? []) as SiteGelen[];
@@ -97,6 +104,32 @@ export default async function SitedenGelenlerPage({ searchParams }: { searchPara
               <code>order.created</code>, <code>quote.created</code> (isteğe bağlı <code>order.updated</code>,{" "}
               <code>quote.updated</code>)
             </p>
+          </div>
+          <div>
+            <div className="text-[11px] uppercase tracking-wide text-text-dim">Son webhook çağrıları (anahtarı doğru olanlar)</div>
+            {(cagrilar ?? []).length === 0 ? (
+              <p className="mt-1 text-text-dim">Henüz çağrı gelmedi — sitenin &quot;Test gönder&quot; düğmesine basınca burada görünür.</p>
+            ) : (
+              <ul className="mt-1 flex flex-col gap-1">
+                {(cagrilar ?? []).map((c) => {
+                  const detay = (c.detay ?? {}) as { sonuc?: string; govde?: unknown };
+                  return (
+                    <li key={c.id}>
+                      <details>
+                        <summary className="cursor-pointer text-[12.5px]">
+                          <span className="font-mono text-text-dim">{formatTarihSaat(c.created_at)}</span> ·{" "}
+                          <span className="font-medium">{c.baslik}</span> ·{" "}
+                          <span className={detay.sonuc === "kaydedildi" ? "text-green" : "text-orange"}>{detay.sonuc}</span>
+                        </summary>
+                        <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-bg-elev p-2 text-[11px]">
+                          {typeof detay.govde === "string" ? detay.govde : JSON.stringify(detay.govde, null, 2)}
+                        </pre>
+                      </details>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
           <ul className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
             {kurulum.map((k) => (
