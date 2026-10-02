@@ -78,12 +78,44 @@ function kalemlerCikar(d: unknown): GelenKalem[] {
     if (!nesneMi(it)) return [];
     const ad =
       metin(
-        sec(it, "name", "ad", "title", "product_name", "productName", "urun", "urun_adi", "product.name", "description"),
+        sec(
+          it,
+          "name",
+          "ad",
+          "title",
+          "product_name",
+          "productName",
+          "urun",
+          "urun_adi",
+          "product.name",
+          "description",
+          "order_code",
+          "orderCode",
+          "sku",
+        ),
       ) ?? "—";
     const adet = sayi(sec(it, "quantity", "adet", "qty", "miktar")) ?? 1;
-    const fiyat = sayi(sec(it, "unit_price", "unitPrice", "price", "birim_fiyat", "fiyat"));
+    const fiyat = sayi(
+      sec(it, "unit_price", "unitPrice", "quoted_unit_price", "price", "birim_fiyat", "fiyat"),
+    );
     return [{ ad, adet, birim_fiyat: fiyat }];
   });
+}
+
+/** Müşteri notuna ek olarak proje adı, istenen teslim, adres ve vergi bilgisini okunur bir nota toplar. */
+function notlarBirlestir(d: unknown, musteri: unknown): string | null {
+  const parcalar = [
+    metin(sec(d, "note", "notes", "message", "mesaj", "not", "notlar", "comment", "comments", "customer_note", "customerNote")),
+    ((p) => (p ? `Proje: ${p}` : null))(metin(sec(d, "project_name", "projectName", "proje"))),
+    ((t) => (t ? `İstenen teslim: ${t}` : null))(metin(sec(d, "requested_delivery", "requestedDelivery"))),
+    ((a) => (a ? `Adres: ${a}` : null))(metin(sec(musteri, "address", "adres") ?? sec(d, "address", "adres"))),
+    ((v) => (v ? `Vergi: ${v}` : null))(
+      [metin(sec(musteri, "tax_number", "taxNumber", "vergi_no")), metin(sec(musteri, "tax_office", "taxOffice", "vergi_dairesi"))]
+        .filter(Boolean)
+        .join(" / "),
+    ),
+  ].filter((p): p is string => Boolean(p));
+  return parcalar.length ? parcalar.join("\n") : null;
 }
 
 /** Olay adından (order.created, quote.updated ...) tipi çıkarır; ilgilenmediğimiz olaylar için null. */
@@ -106,12 +138,30 @@ export function normalizeGelen(
 ): NormalGelen | null {
   let d: unknown = govde;
   if (kaynak === "webhook") {
-    d = sec(govde, "data.object", "data", "payload", "order", "quote") ?? govde;
+    // Zarf: { id (olay kimliği), type, data: { quote | order | object } } — olay kimliğini kayıt kimliği sanmamak için içteki nesneye in.
+    d = sec(govde, "data.object", "data.quote", "data.order", "payload", "order", "quote", "data") ?? govde;
   }
   if (!nesneMi(d)) return null;
 
   const dis_no = metin(
-    sec(d, "number", "order_number", "orderNumber", "quote_number", "quoteNumber", "siparis_no", "teklif_no", "reference", "ref", "no", "code"),
+    sec(
+      d,
+      "number",
+      "order_number",
+      "orderNumber",
+      "order_no",
+      "orderNo",
+      "quote_number",
+      "quoteNumber",
+      "quote_no",
+      "quoteNo",
+      "siparis_no",
+      "teklif_no",
+      "reference",
+      "ref",
+      "no",
+      "code",
+    ),
   );
   const dis_id = metin(sec(d, "id", "uuid", "_id", "order_id", "quote_id")) ?? dis_no;
   if (!dis_id) return null;
@@ -135,7 +185,7 @@ export function normalizeGelen(
     dis_id,
     dis_no,
     musteri_ad:
-      metin(sec(musteri, "name", "ad", "full_name", "fullName", "ad_soyad", "adSoyad")) ??
+      metin(sec(musteri, "name", "ad", "full_name", "fullName", "ad_soyad", "adSoyad", "contact_name", "contactName")) ??
       (adSoyad || null) ??
       metin(sec(d, "customer_name", "customerName", "musteri_ad", "contact_name", "name")),
     musteri_firma:
@@ -150,7 +200,7 @@ export function normalizeGelen(
     toplam,
     para_birimi: paraHam === "TRY" ? "TL" : paraHam,
     kalemler,
-    notlar: metin(sec(d, "note", "notes", "message", "mesaj", "not", "notlar", "comment", "comments")),
+    notlar: notlarBirlestir(d, musteri),
     ham: govde,
     dis_olusturma: tarih(sec(d, "created_at", "createdAt", "created", "date")),
     dis_guncelleme: tarih(sec(d, "updated_at", "updatedAt", "updated", "modified_at")),
